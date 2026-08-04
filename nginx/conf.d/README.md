@@ -34,6 +34,18 @@ confs ajenas y **deja caídos ~8 sitios**. El inventario completo está en
 
 2. **`nginx -t` antes de cada reload.** Sin excepciones.
 
+3. **Todo `restart` de un contenedor backend exige un `nginx -s reload` después.**
+   nginx resuelve los nombres de contenedor (`mardelsur_web`, `robotica_backend`,
+   `mardelsur_roundcube`) **una sola vez, al arrancar**, y cachea la IP. Docker
+   reasigna la IP al recrear o reiniciar un contenedor → nginx sigue apuntando a la
+   IP vieja y **devuelve 502 hasta que se recarga**:
+   ```bash
+   docker compose restart web
+   docker exec mardelsur_nginx nginx -t && docker exec mardelsur_nginx nginx -s reload
+   ```
+   Comprobado en carne propia el 2026-08-04: un `restart web` sin reload dejó
+   transportesmardelsur.cl en 502 durante ~3 minutos.
+
 3. **Los certificados** los renueva `mardelsur_certbot` por webroot
    (`-w /var/www/certbot`). El cron recarga nginx a diario a las 03:50 para que
    tome los certificados renovados; ver `deploy/cron/mardelsur`.

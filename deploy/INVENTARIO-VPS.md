@@ -111,7 +111,25 @@ cp deploy/cron/mardelsur /etc/cron.d/mardelsur && chmod 644 /etc/cron.d/mardelsu
    silencio**. Por eso `scripts/backup_quotes.py` abre `mode=ro`, y cualquier job que
    necesite escribir corre dentro del contenedor con `docker exec -u appuser`.
 
-3. **`nginx -t` antes de cada reload**, y `nginx -s reload` en vez de recrear el
+3. **`nginx -t` antes de cada reload**, `nginx -s reload` en vez de recrear el
    contenedor.
 
-4. **Cuidado con el disco.** 24 GB libres, pero `static/` crece por proyectos ajenos.
+4. **Después de reiniciar cualquier contenedor backend, recargar nginx.** nginx
+   resuelve los nombres de contenedor una sola vez al arrancar y cachea la IP;
+   Docker la reasigna al reiniciar → **502 hasta el reload**. Secuencia correcta:
+   ```bash
+   docker compose restart web
+   docker exec mardelsur_nginx nginx -t && docker exec mardelsur_nginx nginx -s reload
+   ```
+   El 2026-08-04 un `restart web` sin reload dejó el sitio en 502 durante ~3 min.
+
+5. **Cuidado con el disco.** 24 GB libres, pero `static/` crece por proyectos ajenos.
+
+## 8. Estado observado el 2026-08-04
+
+- `roadmap_nginx` lleva semanas *unhealthy*.
+- `sipud.cloud` y `demo.sipud.cloud` responden **502**: sus confs apuntan a
+  `172.17.0.1:{3008,3009}` y no hay ningún contenedor de SIPUD corriendo. Es
+  preexistente, no una regresión.
+- Excalidraw está apagado (`conf.d/disabled-20260710/`), pese a haber estado en
+  producción en `excalidraw.basti.cl`.
