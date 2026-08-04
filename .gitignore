@@ -43,15 +43,43 @@ logs/
 # Docker volumes and certificates
 certbot/
 .docker/
+docker-data/
+
+# Datos de la aplicación (SQLite, respaldos, adjuntos) — NUNCA a git
+*.db
+*.db-wal
+*.db-shm
+*.db.gz
+*.db.bak-*
+
+# nginx: mardelsur_nginx es el proxy central del VPS y su conf.d/ contiene
+# además las confs de OTROS proyectos, que viven solo en el servidor.
+# Solo versionamos la de este proyecto. Ver nginx/conf.d/README.md
+nginx/conf.d/*
+!nginx/conf.d/mardelsur.conf
+!nginx/conf.d/README.md
+
+# static/: subdirectorios servidos para OTROS proyectos del VPS (~1,1 GB).
+# Ver deploy/INVENTARIO-VPS.md
+/static/apuntes/
+/static/aula/
+/static/basti/
+/static/chino/
+/static/lisbeth/
+/static/libs/
+/static/mave/
 
 # Environment variables
 .env
-.env.local
+.env.*
+!.env.example
+mailserver.env
 
 # Backups
 *.tar.gz
 *.zip
 backup/
+backups/
 
 # Temporary files
 *.tmp
