@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>{{ quote.number }}</title>
+<style>
+  @page {
+    size: A4;
+    /* margen inferior amplio: reserva el espacio del pie de página corrido */
+    margin: 15mm 15mm 44mm 15mm;
+    @bottom-center {
+      /* el pie se coloca aquí, anclado al fondo de TODAS las páginas */
+      content: element(piefoot);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    font-size: 10.5pt;
+    color: #2D2D2D;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .hazard-bar {
+    height: 6px;
+    background: repeating-linear-gradient(45deg, #FFD600 0 14px, #2D2D2D 14px 28px);
+    margin-bottom: 16px;
+  }
+
+  table.doc-head {
+    width: 100%;
+    border-collapse: collapse;
+    border-bottom: 2px solid #FFD600;
+    margin-bottom: 18px;
+  }
+  table.doc-head td {
+    vertical-align: top;
+    padding-bottom: 14px;
+  }
+  td.brand-logo { width: 78px; }
+  td.brand-logo img { height: 62px; width: auto; }
+  td.brand-text { padding-left: 12px; }
+  td.brand-text h1 {
+    margin: 0;
+    font-size: 15pt;
+    color: #2D2D2D;
+    letter-spacing: .3px;
+    line-height: 1.15;
+  }
+  td.brand-text .sub {
+    font-size: 8.5pt;
+    color: #777;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  td.doc-meta {
+    text-align: right;
+    font-size: 9.5pt;
+    white-space: nowrap;
+  }
+  .doc-meta .doc-type {
+    display: inline-block;
+    background: #FFD600;
+    color: #2D2D2D;
+    font-weight: 800;
+    padding: 6px 14px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    font-size: 12pt;
+  }
+  .doc-meta .number {
+    font-family: 'Courier New', monospace;
+    font-size: 14pt;
+    font-weight: 700;
+    color: #2D2D2D;
+  }
+  .doc-meta table { margin-left: auto; margin-top: 6px; font-size: 9pt; }
+  .doc-meta td { padding: 1px 0; }
+  .doc-meta td.lbl { color: #888; padding-right: 8px; text-align: right; }
+
+  .blocks { display: flex; gap: 14px; margin-bottom: 14px; }
+  .block {
+    flex: 1;
+    background: #fafafa;
+    border-left: 3px solid #FFD600;
+    padding: 10px 12px;
+  }
+  .block h3 {
+    margin: 0 0 6px;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    font-weight: 700;
+  }
+  .block .name { font-size: 11.5pt; font-weight: 700; color: #2D2D2D; margin-bottom: 3px; }
+  .block .line { font-size: 9.5pt; color: #444; }
+
+  table.items {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14px;
+    margin-bottom: 0;
+  }
+  table.items thead th {
+    background: #2D2D2D;
+    color: #FFD600;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 9px 8px;
+    text-align: left;
+  }
+  table.items thead th.num { text-align: right; }
+  table.items tbody td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 10pt;
+    vertical-align: top;
+  }
+  table.items tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.items tbody tr:nth-child(even) td { background: #fcfcfc; }
+  /* una fila de ítem no se parte entre dos páginas */
+  table.items tbody tr { break-inside: avoid; }
+  /* la cabecera oscura se repite si la tabla pasa a otra página */
+  table.items thead { display: table-header-group; }
+
+  .totals {
+    width: 45%;
+    margin-left: auto;
+    margin-top: 10px;
+    border-collapse: collapse;
+    break-inside: avoid;
+  }
+  .totals td {
+    padding: 6px 10px;
+    font-size: 10.5pt;
+    border-bottom: 1px solid #eee;
+  }
+  .totals td.lbl { color: #666; }
+  .totals td.val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .totals tr.grand td {
+    background: #FFD600;
+    color: #2D2D2D;
+    font-size: 12pt;
+    font-weight: 800;
+    border-bottom: none;
+    padding: 10px 12px;
+  }
+
+  .conditions {
+    margin-top: 18px;
+    padding: 12px 14px;
+    background: #fff8dc;
+    border: 1px solid #fce58c;
+    border-radius: 4px;
+    font-size: 9.5pt;
+    break-inside: avoid;
+  }
+  .conditions h4 {
+    margin: 0 0 4px;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #b08800;
+  }
+
+  .notes { margin-top: 14px; font-size: 9.5pt; color: #444; white-space: pre-line; }
+  .notes h4 { margin: 0 0 4px; font-size: 9pt; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+
+  footer.doc-foot {
+    /* pie de página corrido: se ancla al fondo de CADA página vía @bottom-center */
+    position: running(piefoot);
+    border-top: 2px solid #FFD600;
+    padding-top: 8px;
+    font-size: 8pt;
+    color: #555;
+  }
+  footer.doc-foot table.foot-grid { width: 100%; border-collapse: collapse; }
+  footer.doc-foot table.foot-grid td {
+    width: 33.33%;
+    vertical-align: top;
+    padding-right: 14px;
+    line-height: 1.4;
+  }
+  footer.doc-foot table.foot-grid td:last-child { padding-right: 0; }
+  footer.doc-foot h4 {
+    margin: 0 0 3px;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #2D2D2D;
+  }
+  footer.doc-foot .legal {
+    margin-top: 8px;
+    text-align: center;
+    font-style: italic;
+    color: #888;
+    font-size: 7.5pt;
+  }
+</style>
+</head>
+<body>
+  {# Pie de página corrido — declarado al inicio para que aparezca anclado
+     al fondo de TODAS las páginas (position: running). #}
+  <footer class="doc-foot">
+    <table class="foot-grid">
+      <tr>
+        <td>
+          <h4>Datos de pago</h4>
+          <div>{{ banco.titular or empresa.nombre }}</div>
+          {% if banco.rut %}<div>RUT: {{ banco.rut }}</div>{% endif %}
+          {% if banco.nombre %}<div>{{ banco.nombre }}{% if banco.tipo_cuenta %} · {{ banco.tipo_cuenta }}{% endif %}</div>{% endif %}
+          {% if banco.numero %}<div>Cta N° {{ banco.numero }}</div>{% endif %}
+          {% if banco.email %}<div>Confirmar pago: {{ banco.email }}</div>{% endif %}
+        </td>
+        <td>
+          <h4>Validez de la cotización</h4>
+          <div>Válida hasta el <strong>{{ quote.valid_until_fmt }}</strong>.</div>
+          <div style="margin-top:3px;">Valores expresados en pesos chilenos (CLP).</div>
+        </td>
+        <td>
+          <h4>Empresa</h4>
+          <div>{{ empresa.nombre }}</div>
+          <div>{{ empresa.resolucion }}</div>
+          <div>{{ empresa.web }}</div>
+        </td>
+      </tr>
+    </table>
+    <div class="legal">
+      Documento emitido por {{ empresa.nombre }} · No constituye factura.
+    </div>
+  </footer>
+
+  <div class="hazard-bar"></div>
+
+  <table class="doc-head">
+    <tr>
+      {% if logo_uri %}<td class="brand-logo"><img src="{{ logo_uri }}" alt="Mar del Sur"></td>{% endif %}
+      <td class="brand-text">
+        <h1>{{ empresa.nombre }}</h1>
+        <div class="sub">
+          RUT {{ empresa.rut }}<br>
+          {{ empresa.direccion }}<br>
+          {{ empresa.telefono }} · {{ empresa.email }}
+        </div>
+      </td>
+      <td class="doc-meta">
+        <div class="doc-type">COTIZACIÓN</div>
+        <div class="number">{{ quote.number }}</div>
+        <table>
+          <tr><td class="lbl">Fecha:</td><td>{{ quote.created_at[:10] }}</td></tr>
+          <tr><td class="lbl">Válida hasta:</td><td>{{ quote.valid_until }}</td></tr>
+        </table>
+        <div style="font-size:8.5pt; color:#888; margin-top:2px;">{{ quote.valid_until_fmt }}</div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="blocks">
+    <div class="block">
+      <h3>Cliente</h3>
+      <div class="name">{{ quote.client_name }}</div>
+      {% if quote.client_rut %}<div class="line">RUT: {{ quote.client_rut }}</div>{% endif %}
+      {% if quote.client_address %}<div class="line">{{ quote.client_address }}</div>{% endif %}
+      {% if quote.client_phone %}<div class="line">Tel: {{ quote.client_phone }}</div>{% endif %}
+      {% if quote.client_email %}<div class="line">{{ quote.client_email }}</div>{% endif %}
+    </div>
+    {% if quote.origin or quote.destination %}
+    <div class="block">
+      <h3>Transporte</h3>
+      {% if quote.origin %}<div class="line"><strong>Origen:</strong> {{ quote.origin }}</div>{% endif %}
+      {% if quote.destination %}<div class="line"><strong>Destino:</strong> {{ quote.destination }}</div>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th>Descripción</th>
+        <th class="num" style="width: 9%">Cant.</th>
+        <th style="width: 12%">Unidad</th>
+        <th class="num" style="width: 16%">P. Unitario</th>
+        <th class="num" style="width: 16%">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for it in quote['items'] %}
+      <tr>
+        <td>{{ it.descripcion }}</td>
+        <td class="num">{{ ('%g' % it.cantidad) }}</td>
+        <td>{{ it.unidad }}</td>
+        <td class="num">$ {{ '{:,}'.format(it.precio_unitario).replace(',', '.') }}</td>
+        <td class="num">$ {{ '{:,}'.format(it.subtotal).replace(',', '.') }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr>
+      <td class="lbl">Subtotal</td>
+      <td class="val">$ {{ '{:,}'.format(quote.subtotal).replace(',', '.') }}</td>
+    </tr>
+    <tr>
+      <td class="lbl">{% if quote.iva_applies %}IVA (19%){% else %}IVA{% endif %}</td>
+      <td class="val">{% if quote.iva_applies %}$ {{ '{:,}'.format(quote.iva_amount).replace(',', '.') }}{% else %}Exento{% endif %}</td>
+    </tr>
+    <tr class="grand">
+      <td class="lbl">TOTAL</td>
+      <td class="val">$ {{ '{:,}'.format(quote.total).replace(',', '.') }} CLP</td>
+    </tr>
+  </table>
+
+  {% if quote.payment_terms %}
+  <div class="conditions">
+    <h4>Condiciones de pago</h4>
+    {{ quote.payment_terms }}
+  </div>
+  {% endif %}
+
+  {% if quote.notes %}
+  <div class="notes">
+    <h4>Observaciones</h4>
+    {{ quote.notes }}
+  </div>
+  {% endif %}
+
+</body>
+</html>

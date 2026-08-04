@@ -1,0 +1,30 @@
+{% extends 'admin/_base.html' %}
+{% block title %}Acceso · Mar del Sur{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto mt-6 sm:mt-12">
+  <div class="card">
+    <div class="text-center mb-5">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-yellow-100 mb-3">
+        <i class="fas fa-lock text-yellow-600 text-lg"></i>
+      </div>
+      <h1 class="text-lg font-extrabold text-gray-900">Acceso al panel</h1>
+      <p class="text-sm text-gray-500">Sistema de cotizaciones · solo personal autorizado.</p>
+    </div>
+
+    {% if error %}
+      <div class="flash error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('admin.login') }}{% if request.args.get('next') %}?next={{ request.args.get('next') }}{% endif %}" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="password">Contraseña</label>
+        <input id="password" type="password" name="password" autocomplete="current-password" required autofocus>
+      </div>
+      <button type="submit" class="btn-primary w-full">
+        <i class="fas fa-right-to-bracket"></i> Entrar
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

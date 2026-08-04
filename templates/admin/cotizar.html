@@ -1,0 +1,243 @@
+{% extends 'admin/_base.html' %}
+{% set is_edit = edit_id is not none %}
+{% block title %}{{ 'Editar' if is_edit else 'Nueva' }} cotización · Mar del Sur{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between gap-3 mb-5">
+  <h1 class="text-xl sm:text-2xl font-extrabold text-gray-900">
+    {% if is_edit %}
+      <i class="fas fa-pen-to-square text-yellow-500 mr-2"></i>Editar {{ edit_number }}
+    {% else %}
+      <i class="fas fa-file-invoice text-yellow-500 mr-2"></i>Nueva cotización
+    {% endif %}
+  </h1>
+  <a href="{{ url_for('admin.ver_cotizacion', quote_id=edit_id) if is_edit else url_for('admin.cotizaciones') }}" class="btn-secondary text-sm shrink-0"><i class="fas fa-arrow-left"></i><span class="hidden sm:inline">Volver</span></a>
+</div>
+
+{% if is_edit %}
+<div class="mb-4 text-sm text-gray-500 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2.5">
+  <i class="fas fa-circle-info text-yellow-600 mr-1"></i>
+  Estás editando una cotización existente. El número (<strong>{{ edit_number }}</strong>) y la fecha de emisión se conservan.
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('admin.editar_cotizacion', quote_id=edit_id) if is_edit else url_for('admin.cotizar') }}" class="space-y-5">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <section class="card">
+    <h2 class="font-bold text-gray-800 mb-4"><i class="fas fa-user mr-1 text-gray-400"></i> Datos del cliente</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="field md:col-span-2">
+        <label>Nombre / Razón social *</label>
+        <input name="client_name" required placeholder="Empresa o persona" value="{{ quote.client_name if quote else '' }}">
+      </div>
+      <div class="field">
+        <label>RUT</label>
+        <input name="client_rut" placeholder="77.123.456-7" value="{{ quote.client_rut if quote else '' }}">
+      </div>
+      <div class="field">
+        <label>Teléfono</label>
+        <input name="client_phone" inputmode="tel" placeholder="+56 9 1234 5678" value="{{ quote.client_phone if quote else '' }}">
+      </div>
+      <div class="field md:col-span-2">
+        <label>Dirección</label>
+        <input name="client_address" placeholder="Calle, número, ciudad" value="{{ quote.client_address if quote else '' }}">
+      </div>
+      <div class="field md:col-span-2">
+        <label>Email</label>
+        <input type="email" name="client_email" inputmode="email" placeholder="cliente@empresa.cl" value="{{ quote.client_email if quote else '' }}">
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="font-bold text-gray-800 mb-4"><i class="fas fa-route mr-1 text-gray-400"></i> Transporte</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="field">
+        <label>Origen</label>
+        <input name="origin" placeholder="Ciudad / dirección de carga" value="{{ quote.origin if quote else '' }}">
+      </div>
+      <div class="field">
+        <label>Destino</label>
+        <input name="destination" placeholder="Ciudad / dirección de descarga" value="{{ quote.destination if quote else '' }}">
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <h2 class="font-bold text-gray-800"><i class="fas fa-boxes-stacked mr-1 text-gray-400"></i> Detalle de carga / servicios</h2>
+      <button type="button" id="add-item" class="btn-secondary text-sm shrink-0"><i class="fas fa-plus"></i><span class="hidden sm:inline">Agregar ítem</span></button>
+    </div>
+
+    <div class="items-head">
+      <div>Descripción</div>
+      <div class="text-right">Cantidad</div>
+      <div>Unidad</div>
+      <div class="text-right">Precio unit. (CLP)</div>
+      <div class="text-right">Subtotal</div>
+      <div></div>
+    </div>
+    <div id="items-body"></div>
+
+    <p class="text-xs text-gray-400 mt-1 sm:hidden"><i class="fas fa-circle-info mr-1"></i>Toca "Agregar ítem" para sumar más líneas.</p>
+
+    <div class="mt-4 flex items-center gap-2 flex-wrap">
+      <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+        <input type="checkbox" name="iva_applies" id="iva-checkbox" class="w-4 h-4" {{ 'checked' if (not quote or quote.iva_applies) else '' }}>
+        Aplicar IVA 19%
+      </label>
+      <span class="text-xs text-gray-400">(desmarcar para servicios exentos)</span>
+    </div>
+
+    <div class="mt-4 sm:ml-auto sm:w-72 border-t border-gray-100 pt-3">
+      <div class="totrow text-gray-600"><span>Subtotal</span><span class="font-semibold" id="cell-subtotal">$ 0</span></div>
+      <div class="totrow text-gray-600" id="row-iva"><span>IVA <span id="iva-label">(19%)</span></span><span class="font-semibold" id="cell-iva">$ 0</span></div>
+      <div class="totrow text-lg border-t border-gray-100 mt-1 pt-2"><span class="font-extrabold text-gray-900">TOTAL</span><span class="font-extrabold text-gray-900" id="cell-total">$ 0</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="font-bold text-gray-800 mb-4"><i class="fas fa-file-contract mr-1 text-gray-400"></i> Condiciones</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="field">
+        <label>Válida hasta (fecha de vencimiento)</label>
+        <input type="date" name="valid_until" id="valid_until" value="{{ quote.valid_until if quote else '' }}">
+        <p class="text-xs text-gray-400 mt-1">Toca para abrir el calendario y elegir el mes y día.</p>
+      </div>
+      <div class="field">
+        <label>Condiciones de pago</label>
+        <input name="payment_terms" placeholder="Ej: 50% anticipo, saldo contra entrega" value="{{ quote.payment_terms if quote else '' }}">
+      </div>
+      <div class="field md:col-span-2">
+        <label>Notas / observaciones (opcional)</label>
+        <textarea name="notes" rows="3" placeholder="Cualquier detalle adicional que quieras mostrar en el PDF">{{ quote.notes if quote else '' }}</textarea>
+      </div>
+    </div>
+  </section>
+
+  <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+    <a href="{{ url_for('admin.ver_cotizacion', quote_id=edit_id) if is_edit else url_for('admin.cotizaciones') }}" class="btn-secondary w-full sm:w-auto">Cancelar</a>
+    <button type="submit" class="btn-primary w-full sm:w-auto">
+      {% if is_edit %}<i class="fas fa-floppy-disk"></i> Guardar cambios{% else %}<i class="fas fa-check"></i> Crear cotización{% endif %}
+    </button>
+  </div>
+</form>
+
+<template id="row-template">
+  <div class="item-row">
+    <div class="ir ir-desc">
+      <label>Descripción</label>
+      <textarea name="item_desc" rows="3" placeholder="Ej: Transporte RESPEL Puerto Montt → Santiago. Puedes escribir varias líneas; el recuadro se agranda al arrastrar la esquina."></textarea>
+    </div>
+    <div class="ir ir-qty">
+      <label>Cantidad</label>
+      <input type="text" name="item_qty" value="1" inputmode="decimal" class="text-right">
+    </div>
+    <div class="ir ir-unit">
+      <label>Unidad</label>
+      <input type="text" name="item_unit" placeholder="kg, viaje">
+    </div>
+    <div class="ir ir-price">
+      <label>Precio unitario (CLP)</label>
+      <input type="text" name="item_price" placeholder="0" inputmode="numeric" class="text-right">
+    </div>
+    <div class="ir ir-sub">
+      <label>Subtotal</label>
+      <span class="subtotal-cell">$ 0</span>
+    </div>
+    <div class="ir-del">
+      <button type="button" class="remove-row text-red-400 hover:text-red-600" title="Eliminar ítem"><i class="fas fa-trash"></i></button>
+    </div>
+  </div>
+</template>
+
+<script id="initial-items" type="application/json">{{ (quote['items'] if quote else []) | tojson }}</script>
+
+<script>
+(function() {
+  const body = document.getElementById('items-body');
+  const tpl  = document.getElementById('row-template');
+  const cellSub = document.getElementById('cell-subtotal');
+  const cellIva = document.getElementById('cell-iva');
+  const cellTot = document.getElementById('cell-total');
+  const ivaCb   = document.getElementById('iva-checkbox');
+  const ivaLbl  = document.getElementById('iva-label');
+  const rowIva  = document.getElementById('row-iva');
+
+  function fmt(n) {
+    return '$ ' + Math.round(n).toLocaleString('es-CL');
+  }
+
+  function parseNum(v) {
+    if (!v) return 0;
+    // acepta "1.000,50" o "1000.50"
+    const cleaned = String(v).replace(/\./g, '').replace(',', '.');
+    const n = parseFloat(cleaned);
+    return isFinite(n) ? n : 0;
+  }
+
+  function recalc() {
+    let subtotal = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+      const q = parseNum(row.querySelector('[name=item_qty]').value);
+      const p = parseNum(row.querySelector('[name=item_price]').value);
+      const s = Math.round(q * p);
+      row.querySelector('.subtotal-cell').textContent = fmt(s);
+      subtotal += s;
+    });
+    const iva = ivaCb.checked ? Math.round(subtotal * 0.19) : 0;
+    cellSub.textContent = fmt(subtotal);
+    cellIva.textContent = fmt(iva);
+    cellTot.textContent = fmt(subtotal + iva);
+    rowIva.style.opacity = ivaCb.checked ? '1' : '.4';
+    ivaLbl.textContent   = ivaCb.checked ? '(19%)' : '(exento)';
+  }
+
+  function addRow(item) {
+    body.appendChild(tpl.content.cloneNode(true));
+    const row = body.lastElementChild;
+    if (item && typeof item === 'object' && !(item instanceof Event)) {
+      const set = (sel, val) => { if (val !== undefined && val !== null && val !== '') row.querySelector(sel).value = val; };
+      set('[name=item_desc]',  item.descripcion);
+      set('[name=item_qty]',   item.cantidad);
+      set('[name=item_unit]',  item.unidad);
+      set('[name=item_price]', item.precio_unitario);
+    }
+    bindRow(row);
+    recalc();
+  }
+
+  function bindRow(row) {
+    row.querySelectorAll('input').forEach(i => i.addEventListener('input', recalc));
+    row.querySelector('.remove-row').addEventListener('click', () => {
+      row.remove();
+      if (body.children.length === 0) addRow();
+      recalc();
+    });
+  }
+
+  document.getElementById('add-item').addEventListener('click', () => addRow());
+  ivaCb.addEventListener('change', recalc);
+
+  // Carga inicial: ítems existentes (modo edición) o una fila vacía (modo nuevo).
+  let initial = [];
+  try { initial = JSON.parse(document.getElementById('initial-items').textContent || '[]'); } catch (e) {}
+  if (initial.length) { initial.forEach(it => addRow(it)); }
+  else { addRow(); }
+})();
+
+// Fecha de vencimiento: si está vacía (cotización nueva) -> hoy + 30 días.
+(function() {
+  const input = document.getElementById('valid_until');
+  if (!input) return;
+  if (!input.value) {
+    const fmt = d => d.toISOString().slice(0, 10);
+    const hoy = new Date();
+    const venc = new Date();
+    venc.setDate(venc.getDate() + 30);
+    input.min = fmt(hoy);
+    input.value = fmt(venc);
+  }
+})();
+</script>
+{% endblock %}

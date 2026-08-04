@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Admin · Mar del Sur{% endblock %}</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#2D2D2D">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}?v=20260521">
+  <link href="{{ url_for('static', filename='fontawesome/css/all.min.css') }}" rel="stylesheet">
+  <style>
+    :root { --hazard: #FFD600; --dark: #2D2D2D; }
+    body { background: #f6f6f6; }
+    .stripe { height: 4px; background: repeating-linear-gradient(45deg, #FFD600 0 14px, #2D2D2D 14px 28px); }
+
+    .btn-primary { background: var(--hazard); color: var(--dark); font-weight: 700; padding: .6rem 1.05rem; border-radius: .55rem; transition: transform .1s ease, box-shadow .2s; box-shadow: 0 2px 6px rgba(0,0,0,.08); display:inline-flex; align-items:center; justify-content:center; gap:.4rem; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,.15); }
+    .btn-secondary { background: #fff; color: var(--dark); font-weight: 600; padding: .55rem 1rem; border-radius: .55rem; border: 1px solid #e5e5e5; display:inline-flex; align-items:center; justify-content:center; gap:.4rem; }
+    .btn-secondary:hover { background: #fafafa; }
+    .btn-danger { background: #dc2626; color: #fff; font-weight: 600; padding: .55rem 1rem; border-radius: .55rem; }
+
+    .field label { display:block; font-size: .8rem; font-weight: 600; color:#555; margin-bottom: .25rem; }
+    .field input, .field textarea, .field select { width: 100%; padding: .58rem .7rem; border: 1px solid #d4d4d4; border-radius: .5rem; background: #fff; font-size: .95rem; }
+    .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--hazard); box-shadow: 0 0 0 3px rgba(255,214,0,.25); }
+
+    .card { background: #fff; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.05); padding: 1.5rem; }
+    .flash { padding: .7rem 1rem; border-radius: .55rem; margin-bottom: 1rem; font-weight: 600; }
+    .flash.success { background: #ecfdf5; color: #065f46; border:1px solid #a7f3d0; }
+    .flash.error   { background: #fef2f2; color: #991b1b; border:1px solid #fecaca; }
+
+    /* ---- Filas de ítems (formulario de cotización) ---- */
+    .items-head { display:grid; grid-template-columns: 1fr 84px 96px 134px 116px 38px; gap:10px; padding:0 12px 6px; font-size:.7rem; text-transform:uppercase; letter-spacing:.04em; color:#888; font-weight:700; }
+    .item-row { position:relative; display:grid; grid-template-columns: 1fr 84px 96px 134px 116px 38px; gap:10px; align-items:start; padding:12px; border:1px solid #ececec; border-radius:10px; margin-bottom:10px; background:#fff; }
+    .item-row .ir label { display:none; font-size:.66rem; text-transform:uppercase; letter-spacing:.04em; color:#999; font-weight:700; margin-bottom:3px; }
+    .item-row input, .item-row textarea { width:100%; padding:.5rem .6rem; border:1px solid #e0e0e0; border-radius:.45rem; font-size:.95rem; font-family:inherit; }
+    .item-row textarea { min-height:64px; line-height:1.4; resize:vertical; }
+    .item-row input:focus, .item-row textarea:focus { outline:none; border-color:var(--hazard); box-shadow:0 0 0 3px rgba(255,214,0,.25); }
+    .item-row .ir-sub { font-weight:700; color:#222; padding-top:.5rem; }
+    .item-row .ir-del { display:flex; align-items:center; justify-content:center; padding-top:.3rem; }
+
+    /* ---- Tablas que se vuelven tarjetas en móvil ---- */
+    .totrow { display:flex; justify-content:space-between; padding:.45rem 0; }
+
+    @media (max-width: 680px) {
+      .card { padding: 1.05rem; }
+      .field input, .field textarea, .field select { font-size: 16px; }
+
+      /* ítems: cada fila pasa a tarjeta apilada */
+      .items-head { display:none; }
+      .item-row { grid-template-columns: 1fr 1fr; gap:10px 12px; padding-top:14px; }
+      .item-row .ir label { display:block; }
+      .item-row .ir-desc, .item-row .ir-price, .item-row .ir-sub { grid-column: 1 / -1; }
+      .item-row .ir input, .item-row .ir textarea { font-size:16px; }
+      .item-row .ir-sub { display:flex; align-items:center; justify-content:space-between; border-top:1px dashed #eee; padding-top:8px; }
+      .item-row .ir-sub label { margin-bottom:0; }
+      .item-row .ir-del { position:absolute; top:6px; right:6px; padding:0; }
+
+      /* tablas responsivas -> tarjetas */
+      table.responsive thead { display:none; }
+      table.responsive, table.responsive tbody, table.responsive tr, table.responsive td { display:block; width:100%; }
+      table.responsive tr { border:1px solid #eee; border-radius:10px; margin-bottom:10px; padding:10px 12px; background:#fff; }
+      table.responsive td { border:none !important; padding:5px 0; display:flex; justify-content:space-between; gap:14px; text-align:right; }
+      table.responsive td::before { content:attr(data-label); color:#999; font-weight:700; font-size:.72rem; text-transform:uppercase; letter-spacing:.03em; text-align:left; }
+      table.responsive td.cell-actions { justify-content:flex-end; padding-top:8px; border-top:1px dashed #eee !important; margin-top:4px; }
+      table.responsive td.cell-actions::before { content:""; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <div class="stripe"></div>
+
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-20">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
+      <a href="{{ url_for('admin.cotizaciones') if session.get('admin') else url_for('admin.login') }}" class="flex items-center gap-2.5 min-w-0">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Mar del Sur" class="h-8 w-auto shrink-0">
+        <div class="leading-tight min-w-0">
+          <div class="font-extrabold text-gray-900 text-sm truncate">Mar del Sur</div>
+          <div class="text-[11px] text-gray-500 truncate">Panel de cotizaciones</div>
+        </div>
+      </a>
+      {% if session.get('admin') %}
+      <nav class="flex items-center gap-1.5 text-sm shrink-0">
+        <a href="{{ url_for('admin.cotizaciones') }}" class="px-2.5 py-1.5 rounded hover:bg-gray-100 text-gray-700">
+          <i class="fas fa-list sm:mr-1"></i><span class="hidden sm:inline">Cotizaciones</span>
+        </a>
+        <a href="{{ url_for('admin.cotizar') }}" class="btn-primary text-sm">
+          <i class="fas fa-plus"></i><span class="hidden sm:inline">Nueva</span>
+        </a>
+        <a href="{{ url_for('admin.logout') }}" class="text-gray-400 hover:text-red-600 px-2.5 py-1.5" title="Cerrar sesión">
+          <i class="fas fa-right-from-bracket"></i>
+        </a>
+      </nav>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="flex-1">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-8">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, msg in messages %}
+          <div class="flash {{ category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer class="mt-auto py-5 text-center text-xs text-gray-400">
+    Transportes Mar del Sur SPA · Panel interno
+  </footer>
+</body>
+</html>

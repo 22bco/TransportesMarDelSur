@@ -1,0 +1,94 @@
+{% extends 'admin/_base.html' %}
+{% block title %}{{ quote.number }} · Mar del Sur{% endblock %}
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+  <div>
+    <a href="{{ url_for('admin.cotizaciones') }}" class="text-sm text-gray-500 hover:text-gray-900"><i class="fas fa-arrow-left mr-1"></i> Volver</a>
+    <h1 class="text-xl sm:text-2xl font-extrabold text-gray-900 mt-1">{{ quote.number }}</h1>
+    <p class="text-sm text-gray-500">Emitida {{ quote.created_at[:10] }} · Válida hasta el {{ quote.valid_until_fmt }}</p>
+  </div>
+  <div class="flex flex-col sm:flex-row gap-2">
+    <a href="{{ url_for('admin.pdf_cotizacion', quote_id=quote.id) }}" class="btn-primary w-full sm:w-auto">
+      <i class="fas fa-file-pdf"></i> Descargar PDF
+    </a>
+    <a href="{{ url_for('admin.editar_cotizacion', quote_id=quote.id) }}" class="btn-secondary w-full sm:w-auto">
+      <i class="fas fa-pen-to-square"></i> Editar
+    </a>
+    <a href="mailto:{{ quote.client_email }}?subject=Cotización {{ quote.number }} - Transportes Mar del Sur" class="btn-secondary w-full sm:w-auto" {% if not quote.client_email %}style="opacity:.5; pointer-events:none"{% endif %}>
+      <i class="fas fa-envelope"></i> Enviar por mail
+    </a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+  <div class="card md:col-span-2">
+    <h2 class="font-bold text-gray-800 mb-3">Cliente</h2>
+    <div class="text-sm space-y-1 text-gray-700">
+      <div class="text-lg font-semibold text-gray-900">{{ quote.client_name }}</div>
+      {% if quote.client_rut %}<div><span class="text-gray-500">RUT:</span> {{ quote.client_rut }}</div>{% endif %}
+      {% if quote.client_address %}<div><span class="text-gray-500">Dirección:</span> {{ quote.client_address }}</div>{% endif %}
+      {% if quote.client_phone %}<div><span class="text-gray-500">Tel:</span> {{ quote.client_phone }}</div>{% endif %}
+      {% if quote.client_email %}<div class="break-all"><span class="text-gray-500">Email:</span> {{ quote.client_email }}</div>{% endif %}
+    </div>
+
+    {% if quote.origin or quote.destination %}
+    <hr class="my-4 border-gray-100">
+    <h2 class="font-bold text-gray-800 mb-2">Transporte</h2>
+    <div class="text-sm text-gray-700">
+      {% if quote.origin %}<div><span class="text-gray-500">Origen:</span> {{ quote.origin }}</div>{% endif %}
+      {% if quote.destination %}<div><span class="text-gray-500">Destino:</span> {{ quote.destination }}</div>{% endif %}
+    </div>
+    {% endif %}
+
+    <hr class="my-4 border-gray-100">
+    <h2 class="font-bold text-gray-800 mb-3">Detalle</h2>
+    <table class="w-full text-sm responsive">
+      <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+        <tr>
+          <th class="px-3 py-2 text-left">Descripción</th>
+          <th class="px-3 py-2 text-right">Cant.</th>
+          <th class="px-3 py-2 text-left">Unidad</th>
+          <th class="px-3 py-2 text-right">P. Unitario</th>
+          <th class="px-3 py-2 text-right">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for it in quote['items'] %}
+        <tr class="border-t border-gray-100">
+          <td class="px-3 py-2 font-medium text-gray-900" data-label="Descripción">{{ it.descripcion }}</td>
+          <td class="px-3 py-2 text-right" data-label="Cantidad">{{ it.cantidad }}</td>
+          <td class="px-3 py-2" data-label="Unidad">{{ it.unidad }}</td>
+          <td class="px-3 py-2 text-right" data-label="P. Unitario">$ {{ '{:,}'.format(it.precio_unitario).replace(',', '.') }}</td>
+          <td class="px-3 py-2 text-right font-semibold" data-label="Subtotal">$ {{ '{:,}'.format(it.subtotal).replace(',', '.') }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 class="font-bold text-gray-800 mb-3">Resumen</h2>
+    <div class="space-y-2 text-sm">
+      <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span class="font-semibold">$ {{ '{:,}'.format(quote.subtotal).replace(',', '.') }}</span></div>
+      <div class="flex justify-between">
+        <span class="text-gray-500">{% if quote.iva_applies %}IVA 19%{% else %}IVA{% endif %}</span>
+        <span class="font-semibold">{% if quote.iva_applies %}$ {{ '{:,}'.format(quote.iva_amount).replace(',', '.') }}{% else %}Exento{% endif %}</span>
+      </div>
+      <div class="border-t border-gray-100 pt-2 mt-2 flex justify-between text-lg">
+        <span class="font-bold">TOTAL</span>
+        <span class="font-extrabold text-gray-900">$ {{ '{:,}'.format(quote.total).replace(',', '.') }}</span>
+      </div>
+    </div>
+    {% if quote.payment_terms %}
+    <hr class="my-4 border-gray-100">
+    <h3 class="font-semibold text-gray-700 text-sm mb-1">Condiciones de pago</h3>
+    <p class="text-sm text-gray-600">{{ quote.payment_terms }}</p>
+    {% endif %}
+    {% if quote.notes %}
+    <hr class="my-4 border-gray-100">
+    <h3 class="font-semibold text-gray-700 text-sm mb-1">Notas</h3>
+    <p class="text-sm text-gray-600 whitespace-pre-line">{{ quote.notes }}</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
