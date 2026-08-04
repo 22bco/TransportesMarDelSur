@@ -1,7 +1,36 @@
 from flask import Flask, render_template, send_from_directory, request, redirect
 import os
+from datetime import timedelta
+
+# Cargar variables de .env si está disponible (en dev) — en Docker llegan vía env_file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+from admin import admin_bp, init_db
 
 app = Flask(__name__)
+
+# Sesiones / seguridad para el panel admin
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-me-in-env')
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+# El sitio se sirve siempre por HTTPS (Cloudflare con "Always Use HTTPS").
+app.config['SESSION_COOKIE_SECURE'] = True
+
+# Protección CSRF para los formularios del panel admin.
+# NOTA: flask-wtf se añade a requirements.txt en otro proceso; si la imagen
+# actual no lo tiene instalado, el import fallará hasta el próximo rebuild.
+from flask_wtf.csrf import CSRFProtect
+CSRFProtect(app)
+
+app.register_blueprint(admin_bp)
+
+with app.app_context():
+    init_db()
 
 # Force HTTPS in production (disabled temporarily until SSL is configured)
 # @app.before_request
