@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Flask-based marketing website for "Transporte Mar del Sur SPA", a Chilean company specializing in hazardous materials (RESPEL) and medical waste (REAS) transportation. The website is built with Flask (Python), uses Tailwind CSS via CDN, and is structured in Spanish.
+This is a Flask application for "Transportes Mar del Sur SPA", a Chilean company specializing in hazardous materials (RESPEL) and medical waste (REAS) transportation. It serves a public marketing website **and** an authenticated admin panel at `/admin`. Built with Flask, SQLite and locally-compiled Tailwind CSS, structured in Spanish.
 
 **Business Context:**
 - Company: Transporte Mar del Sur SPA (RUT: 77.779.818-9)
@@ -24,13 +24,31 @@ python3 app.py
 
 ### Dependencies
 ```bash
-# Install Python dependencies
 pip install -r requirements.txt
-
-# Only dependency is Flask
 ```
 
-No build process, tests, or linting is currently configured.
+Flask 3.0, Gunicorn, **WeasyPrint** (PDF server-side), **flask-wtf** (CSRF),
+python-dotenv, tzdata. WeasyPrint needs pango/cairo: the Dockerfile installs them;
+on macOS they come from Homebrew.
+
+### CSS build
+```bash
+npm run build:css     # una vez
+npm run watch:css     # en desarrollo
+```
+Tailwind v4 se **compila localmente** a `static/css/tailwind.css` (ya no es CDN).
+Colores custom en `static/css/input.css`.
+
+### Deployment — regla no negociable
+> **Nadie edita archivos en `/opt/TransportesMarDelSur` con un editor.
+> Se despliega con `git pull`.**
+
+Hasta agosto de 2026 el panel admin existió *solo* en el VPS, sin historial ni
+rollback. Ver `docs/adr/ADR-000-el-codigo-vivia-fuera-de-git.md`.
+
+`mardelsur_nginx` es el **proxy central del VPS**: sirve ~11 dominios de otros
+proyectos. Antes de cualquier reload, `docker exec mardelsur_nginx nginx -t`, y usar
+`nginx -s reload` en vez de recrear el contenedor. Ver `deploy/INVENTARIO-VPS.md`.
 
 ## Architecture
 
@@ -54,7 +72,7 @@ The application uses a **multi-page architecture** with dedicated routes for eac
 **Base Template (templates/base.html):**
 - Defines site-wide structure with comprehensive SEO meta tags
 - Includes Schema.org JSON-LD structured data for local business
-- Loads Tailwind CSS via CDN (configured with custom `hazard` color: #FFD600)
+- Loads locally-compiled Tailwind CSS (`static/css/tailwind.css`; custom `hazard` color #FFD600 defined in `static/css/input.css`)
 - Loads Font Awesome 6.0.0 for icons
 - Includes shared components: navbar, footer, quick contact buttons
 - Defines blocks: `{% block title %}`, `{% block description %}`, `{% block content %}`
@@ -100,7 +118,7 @@ All page templates extend base.html and override title/description/content block
 - `static/img/logo_*.svg` - Alternative logo variations (not currently used)
 
 **CSS:**
-- Tailwind CSS loaded via CDN (no build process)
+- Tailwind v4 compiled locally via `npm run build:css` (`static/css/input.css` → `static/css/tailwind.css`)
 - Custom config in base.html:157-169 with hazard yellow (#FFD600)
 - `static/css/contact-button.css` - Floating contact button styles
 
@@ -144,8 +162,31 @@ Hardcoded throughout templates:
 - Phone/WhatsApp: +56 9 42857502
 - Location: Puerto Montt, Los Lagos
 
-### No Backend Processing
-Forms are static (no POST handling). The contact form (contact.html:292-374) has `type="button"` and no action - form submission needs to be implemented.
+### Admin panel (`admin.py`)
+Blueprint autenticado bajo `/admin`: sistema de cotizaciones con folio correlativo
+(`COT-2026-003`), PDF vía WeasyPrint y respaldo diario de la BD.
+
+Patrones a reutilizar en cualquier módulo nuevo:
+- `get_db()` — context manager con commit/rollback/close garantizado, WAL,
+  `PRAGMA foreign_keys`, `busy_timeout`.
+- `insert_quote()` — folio correlativo atómico con `BEGIN IMMEDIATE` + reintentos
+  ante `IntegrityError`. **Obligatorio** con varios workers de gunicorn: sin el lock
+  de escritura, dos POST simultáneos calculan el mismo correlativo.
+- `login_required`, `_logo_data_uri()` (base64 → data URI para el PDF),
+  `_echo_quote()` (re-muestra el formulario sin perder lo escrito si falla la
+  validación), `_fecha_larga()`.
+- Errores: `current_app.logger.error(...)` + `flash(msg, 'error')` + re-render.
+
+Convención: **nombres de dominio, rutas, docstrings y comentarios en español**.
+
+La BD (`quotes.db`) es de uid 1000. **Ningún proceso del host la abre en modo
+escritura**: dejaría `-wal`/`-shm` de root y el contenedor perdería la escritura en
+silencio. Por eso `scripts/backup_quotes.py` usa `mode=ro`, y los jobs que escriben
+corren con `docker exec -u appuser`.
+
+### Contact form
+El formulario de contacto hace POST a **Formspree** (servicio externo); Flask no lo
+procesa.
 
 ### Chilean Regulatory Context
 References to Chilean regulations are central to content:
