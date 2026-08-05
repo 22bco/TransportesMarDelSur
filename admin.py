@@ -25,6 +25,7 @@ from flask import (
 )
 from weasyprint import HTML
 
+import auth
 from auth import destino_seguro, login_required
 from db import get_db, init_wal
 
@@ -144,18 +145,76 @@ def index():
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    expected = os.environ.get('ADMIN_PASSWORD', '')
+    """Login nominado, con ventana de compatibilidad.
+
+    - Con email: se verifica contra la tabla `usuario` (camino nuevo).
+    - Sin email y con PERMITIR_LOGIN_LEGACY=1: se acepta la contraseña única
+      de siempre, dejando un WARNING en el log. Al apagar esa variable, este
+      camino desaparece y se borra ADMIN_PASSWORD del .env.
+    """
     error = None
     if request.method == 'POST':
-        pw = request.form.get('password', '')
-        if expected and pw == expected:
-            session.clear()
-            session['admin'] = True
-            session.permanent = True
-            return redirect(destino_seguro(request.args.get('next'),
-                                           url_for('admin.cotizaciones')))
-        error = 'Contraseña incorrecta.'
-    return render_template('admin/login.html', error=error)
+        email = (request.form.get('email') or '').strip()
+        password = request.form.get('password', '')
+
+        if email:
+            usuario = auth.autenticar(email, password)
+            if usuario:
+                auth.iniciar_sesion(usuario)
+                auth.registrar_ingreso(usuario['id'])
+                if usuario['debe_cambiar_password']:
+                    return redirect(url_for('admin.cambiar_password'))
+                return redirect(destino_seguro(request.args.get('next'),
+                                               url_for('admin.cotizaciones')))
+            # Mismo mensaje para "no existe" y "contraseña mala": no se
+            # confirma qué cuentas existen.
+            error = 'Credenciales incorrectas.'
+
+        elif auth.permitir_login_legacy():
+            esperada = os.environ.get('ADMIN_PASSWORD', '')
+            if esperada and password == esperada:
+                current_app.logger.warning(
+                    'Acceso con la contraseña compartida (sin usuario nominado). '
+                    'Migre a un usuario propio: las constancias emitidas así no '
+                    'quedan atribuidas a una persona.')
+                auth.iniciar_sesion(None)
+                return redirect(destino_seguro(request.args.get('next'),
+                                               url_for('admin.cotizaciones')))
+            error = 'Credenciales incorrectas.'
+        else:
+            error = 'Debe indicar su correo.'
+
+    return render_template('admin/login.html', error=error,
+                           legacy=auth.permitir_login_legacy())
+
+
+@admin_bp.route('/cambiar-password', methods=['GET', 'POST'])
+def cambiar_password():
+    if not session.get('admin'):
+        return redirect(url_for('admin.login'))
+
+    usuario_id = session.get('usuario_id')
+    if not usuario_id:
+        # Sesión legacy: no hay a quién cambiarle la contraseña.
+        flash('Está usando el acceso compartido. Pida un usuario propio.', 'error')
+        return redirect(url_for('admin.cotizaciones'))
+
+    error = None
+    if request.method == 'POST':
+        nueva = request.form.get('password', '')
+        if nueva != request.form.get('password2', ''):
+            error = 'Las contraseñas no coinciden.'
+        else:
+            try:
+                auth.cambiar_password(usuario_id, nueva)
+                session['debe_cambiar_password'] = False
+                flash('Contraseña actualizada.', 'success')
+                return redirect(url_for('admin.cotizaciones'))
+            except auth.PasswordDebil as e:
+                error = str(e)
+
+    return render_template('admin/cambiar_password.html', error=error,
+                           obligatorio=session.get('debe_cambiar_password'))
 
 
 @admin_bp.route('/logout')

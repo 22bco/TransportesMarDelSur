@@ -46,12 +46,18 @@ def crear_app(config=None):
     from constancias.esquema import init_db_constancias
     from constancias.rutas_admin import constancias_bp
     from constancias.rutas_publicas import verificar_bp
+    from constancias.maestros import maestros_bp
     app.register_blueprint(constancias_bp)
+    app.register_blueprint(maestros_bp)
     app.register_blueprint(verificar_bp)
 
     with app.app_context():
         init_db()
         init_db_constancias()
+        # Si la tabla de usuarios está vacía, crea el primer admin desde el
+        # entorno. Evita que un despliegue limpio deje a todos fuera.
+        import auth
+        auth.bootstrap_admin()
 
     return app
 
