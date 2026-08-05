@@ -35,14 +35,22 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn
 # Copy project files
 COPY . .
 
-# Create a non-root user and data directory for the SQLite database
+# Usuario no-root + directorios de datos (BD SQLite y adjuntos).
+# uid 1000 coincide con el dueño de ./docker-data/quotes en el host.
 RUN useradd -m -u 1000 appuser \
-    && mkdir -p /app/data \
+    && mkdir -p /app/data/adjuntos \
     && chown -R appuser:appuser /app
 USER appuser
 
-# Expose port
 EXPOSE 5001
 
-# Run the application with Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "4", "--timeout", "120", "app:app"]
+# --preload: importa WeasyPrint UNA vez en el proceso maestro y los workers lo
+#   heredan por copy-on-write. Sin esto se paga su memoria una vez por worker.
+# --workers 3: el host tiene 1 CPU compartida por varios contenedores; con
+#   workers sync, más procesos no dan más throughput, solo más RSS.
+# --max-requests: WeasyPrint fragmenta memoria; reciclar workers acota el
+#   crecimiento en un servidor sin swap.
+CMD ["gunicorn", "--bind", "0.0.0.0:5001", \
+     "--workers", "3", "--preload", \
+     "--max-requests", "300", "--max-requests-jitter", "50", \
+     "--timeout", "120", "app:app"]

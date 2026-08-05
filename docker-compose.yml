@@ -16,11 +16,22 @@ services:
     volumes:
       - ./static:/app/static:ro
       - ./templates:/app/templates:ro
+      # Código: se montan DIRECTORIOS, no archivos sueltos. Añadir un módulo
+      # nuevo no debe obligar a editar este archivo ni a recrear el contenedor.
       - ./app.py:/app/app.py:ro
       - ./admin.py:/app/admin.py:ro
+      - ./db.py:/app/db.py:ro
+      - ./auth.py:/app/auth.py:ro
+      - ./constancias:/app/constancias:ro
+      - ./scripts:/app/scripts:ro
+      # Único volumen de escritura: base de datos y adjuntos. static/ y
+      # templates/ son :ro, así que nada de subidas puede vivir ahí.
       - ./docker-data/quotes:/app/data
     networks:
       - mardelsur_network
+    # Sin swap en el host: si WeasyPrint se dispara, que el OOM killer mate a
+    # este contenedor y no al servidor de correo o al backend de robótica.
+    mem_limit: 512m
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:5001/').status==200 else 1)"]
       interval: 30s
