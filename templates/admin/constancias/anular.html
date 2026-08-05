@@ -1,0 +1,42 @@
+{% extends "admin/_base.html" %}
+{% block title %}Anular {{ c.folio }} · Mar del Sur{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <h1 class="text-xl font-bold mb-1">Anular constancia</h1>
+  <p class="text-sm text-gray-500 mb-5 font-mono">{{ c.folio }}</p>
+
+  <div class="bg-amber-50 border border-amber-300 rounded p-4 mb-5 text-sm text-amber-900">
+    <p class="font-semibold mb-1"><i class="fa-solid fa-triangle-exclamation"></i> Esto no se puede deshacer.</p>
+    <p>
+      La constancia quedará marcada como anulada de forma permanente y así se
+      mostrará a cualquiera que verifique su código. El motivo queda registrado
+      para siempre y <strong>no se puede reescribir</strong>, pero no se publica
+      en la página pública.
+    </p>
+    <p class="mt-2">
+      Si además necesita emitir una versión corregida, use
+      <a href="{{ url_for('constancias.reemplazar_constancia', constancia_id=c.id) }}"
+         class="underline font-semibold">reemplazar</a> en vez de anular.
+    </p>
+  </div>
+
+  <form method="post" class="bg-white border rounded p-4 space-y-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="block">
+      <span class="text-sm font-medium">Motivo de la anulación *</span>
+      <textarea name="motivo" rows="3" required minlength="10"
+                class="w-full border rounded px-2 py-1.5 mt-1"
+                placeholder="Ej.: la cantidad registrada no corresponde al retiro efectuado."
+                >{{ (previo or {}).get('motivo', '') }}</textarea>
+      <span class="text-xs text-gray-500">Mínimo 10 caracteres. Quedará registrado de forma permanente.</span>
+    </label>
+    <div class="flex gap-3">
+      <button type="submit" class="btn-danger">
+        <i class="fa-solid fa-ban"></i> Anular constancia
+      </button>
+      <a href="{{ url_for('constancias.ver', constancia_id=c.id) }}"
+         class="px-3 py-1.5 text-sm text-gray-600">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

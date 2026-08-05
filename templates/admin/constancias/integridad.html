@@ -1,0 +1,67 @@
+{% extends "admin/_base.html" %}
+{% block title %}Integridad · Mar del Sur{% endblock %}
+{% block content %}
+<h1 class="text-xl font-bold mb-1">Integridad de la cadena</h1>
+<p class="text-sm text-gray-500 mb-5">
+  Cada constancia encadena con el hash de la anterior. Alterar una obligaría a
+  recalcular todas las posteriores.
+</p>
+
+{% if ok %}
+<div class="bg-green-50 border-l-4 border-green-600 rounded p-4 mb-6">
+  <p class="font-semibold text-green-900">Cadena íntegra</p>
+  <p class="text-sm text-green-800 mt-1">
+    {{ n }} eslabón(es) verificado(s) · {{ n_anclajes }} anclaje(s) coinciden con su constancia.
+  </p>
+</div>
+{% else %}
+<div class="bg-red-50 border-l-4 border-red-600 rounded p-4 mb-6">
+  <p class="font-semibold text-red-900">Se detectaron problemas</p>
+  <ul class="text-sm text-red-800 mt-2 list-disc pl-5 space-y-1">
+    {% for p in problemas %}<li>{{ p }}</li>{% endfor %}
+  </ul>
+  <p class="text-sm text-red-900 mt-3 font-medium">
+    Revise el respaldo del día antes de tocar nada.
+  </p>
+</div>
+{% endif %}
+
+<h2 class="font-semibold mb-3">Anclajes publicados</h2>
+<p class="text-sm text-gray-500 mb-3">
+  Cada día se publica el último hash en un canal externo. Eso es lo que permite
+  demostrar ante un tercero que las constancias existían con ese contenido a esa
+  fecha: no lo prueba nuestra firma, sino que el mensaje esté en el buzón de otro.
+</p>
+
+<div class="bg-white border rounded overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-100 text-left"><tr>
+      <th class="px-3 py-2 font-semibold">Fecha</th>
+      <th class="px-3 py-2 font-semibold">Folio anclado</th>
+      <th class="px-3 py-2 font-semibold">Hash</th>
+      <th class="px-3 py-2 font-semibold text-right">Del día</th>
+      <th class="px-3 py-2 font-semibold text-right">Total</th>
+      <th class="px-3 py-2 font-semibold">Envío</th>
+    </tr></thead>
+    <tbody>
+      {% for a in anclajes %}
+      <tr class="border-t">
+        <td class="px-3 py-2">{{ a.fecha }}</td>
+        <td class="px-3 py-2 font-mono">{{ a.folio or '—' }}</td>
+        <td class="px-3 py-2 font-mono text-xs">{{ a.hash_actual[:16] }}…</td>
+        <td class="px-3 py-2 text-right">{{ a.n_constancias_dia }}</td>
+        <td class="px-3 py-2 text-right">{{ a.n_constancias_total }}</td>
+        <td class="px-3 py-2">
+          {% if a.enviado_ok %}<span class="text-green-700">enviado</span>
+          {% else %}<span class="text-amber-700">solo local</span>{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="px-3 py-6 text-center text-gray-500">
+        Todavía no hay anclajes. El primero se publica en la próxima ejecución del cron.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

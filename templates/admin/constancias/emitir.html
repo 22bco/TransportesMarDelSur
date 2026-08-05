@@ -1,5 +1,6 @@
 {% extends "admin/_base.html" %}
 {% set p = previo or {} %}
+{% set reemplaza = reemplaza if reemplaza is defined else None %}
 {% block title %}Emitir constancia · Mar del Sur{% endblock %}
 
 {% block content %}
@@ -11,8 +12,27 @@
   </p>
 </div>
 
+{% if reemplaza %}
+<div class="bg-blue-50 border border-blue-300 rounded p-4 mb-5 text-sm text-blue-900">
+  <p class="font-semibold mb-1">Reemplazando la constancia {{ reemplaza.folio }}</p>
+  <p>Se emitirá un documento nuevo, con su propio folio y código. La anterior
+     quedará marcada como reemplazada y su código dejará de dar por vigente.</p>
+</div>
+{% endif %}
+
 <form method="post" class="space-y-5">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% if reemplaza %}
+  <div class="bg-white border rounded p-4">
+    <label class="block">
+      <span class="text-sm font-medium">Motivo del reemplazo *</span>
+      <textarea name="motivo" rows="2" required minlength="10"
+                class="w-full border rounded px-2 py-1.5 mt-1"
+                placeholder="Ej.: se corrige la cantidad, que estaba mal medida."></textarea>
+      <span class="text-xs text-gray-500">Mínimo 10 caracteres. Queda registrado de forma permanente.</span>
+    </label>
+  </div>
+  {% endif %}
 
   <section class="bg-white border rounded p-4">
     <h2 class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">Cliente y lugar</h2>

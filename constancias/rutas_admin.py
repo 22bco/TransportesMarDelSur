@@ -12,13 +12,16 @@ from flask import (
     request, session, url_for,
 )
 
-from auth import login_required
+from auth import login_required, rol_requerido
 from db import get_db
 from .dominio import (
     CantidadInvalida, RutInvalido, a_centesimas, fmt_m3_es, formatear_codigo,
     normalizar_rut,
 )
 from .pdf import ETIQUETA_METODO, ETIQUETA_OPERACION, respuesta_pdf, url_verificacion
+from .ciclo_vida import (
+    AnulacionInvalida, anular, datos_para_reemplazo, reemplazar,
+)
 from .repositorio import DatosInvalidos, emitir, listar, obtener
 
 
@@ -193,3 +196,80 @@ def pdf(constancia_id):
         current_app.logger.error('Error al generar el PDF de %s: %s', constancia_id, e)
         flash('No se pudo generar el PDF. Intente nuevamente.', 'error')
         return redirect(url_for('constancias.ver', constancia_id=constancia_id))
+
+
+@constancias_bp.route('/<int:constancia_id>/anular', methods=['GET', 'POST'])
+@rol_requerido('admin')
+def anular_constancia(constancia_id):
+    """Anular es la única forma de 'corregir' una constancia emitida."""
+    c = obtener(constancia_id)
+    if not c:
+        abort(404)
+
+    if request.method == 'POST':
+        try:
+            anular(constancia_id, request.form.get('motivo'),
+                   usuario_id=session.get('usuario_id'))
+        except AnulacionInvalida as e:
+            flash(str(e), 'error')
+            return render_template('admin/constancias/anular.html', c=c,
+                                   previo=request.form)
+        flash(f'Constancia {c["folio"]} anulada.', 'success')
+        return redirect(url_for('constancias.ver', constancia_id=constancia_id))
+
+    return render_template('admin/constancias/anular.html', c=c, previo=None)
+
+
+@constancias_bp.route('/<int:constancia_id>/reemplazar', methods=['GET', 'POST'])
+@rol_requerido('admin')
+def reemplazar_constancia(constancia_id):
+    """Emite una constancia nueva y deja la anterior como 'reemplazada'."""
+    anterior = obtener(constancia_id)
+    if not anterior:
+        abort(404)
+
+    if request.method == 'POST':
+        try:
+            datos = _form_a_datos(request.form)
+            nueva = reemplazar(constancia_id, datos, request.form.get('motivo'),
+                               usuario_id=session.get('usuario_id'))
+        except (DatosInvalidos, CantidadInvalida, RutInvalido,
+                AnulacionInvalida) as e:
+            flash(str(e), 'error')
+            return render_template('admin/constancias/emitir.html',
+                                   **_catalogos(), previo=request.form,
+                                   reemplaza=anterior)
+        except sqlite3.IntegrityError as e:
+            current_app.logger.warning('Reemplazo rechazado por la BD: %s', e)
+            flash(f'La base de datos rechazó el reemplazo: {e}', 'error')
+            return render_template('admin/constancias/emitir.html',
+                                   **_catalogos(), previo=request.form,
+                                   reemplaza=anterior)
+
+        flash(f'Constancia {nueva["folio"]} emitida en reemplazo de '
+              f'{anterior["folio"]}.', 'success')
+        return redirect(url_for('constancias.ver', constancia_id=nueva['id']))
+
+    return render_template('admin/constancias/emitir.html', **_catalogos(),
+                           previo=datos_para_reemplazo(constancia_id),
+                           reemplaza=anterior)
+
+
+@constancias_bp.route('/integridad')
+@login_required
+def integridad():
+    """Estado de la cadena y de los anclajes publicados."""
+    from .cadena import verificar_anclajes, verificar_cadena
+
+    with get_db() as conn:
+        ok_cadena, n, problemas = verificar_cadena(conn)
+        ok_anclajes, n_anclajes, problemas_anclaje = verificar_anclajes(conn)
+        anclajes = [dict(f) for f in conn.execute("""
+            SELECT * FROM anclaje_diario ORDER BY fecha DESC LIMIT 30
+        """)]
+
+    return render_template('admin/constancias/integridad.html',
+                           ok=(ok_cadena and ok_anclajes), n=n,
+                           n_anclajes=n_anclajes,
+                           problemas=problemas + problemas_anclaje,
+                           anclajes=anclajes)

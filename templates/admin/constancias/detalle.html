@@ -16,16 +16,35 @@
     <a href="{{ url_for('constancias.pdf', constancia_id=c.id) }}" class="btn-primary">
       <i class="fa-solid fa-file-pdf"></i> Descargar PDF
     </a>
+    {% if c.estado == 'vigente' %}
+    <a href="{{ url_for('constancias.reemplazar_constancia', constancia_id=c.id) }}"
+       class="btn-secondary text-sm"><i class="fa-solid fa-rotate"></i> Reemplazar</a>
+    <a href="{{ url_for('constancias.anular_constancia', constancia_id=c.id) }}"
+       class="px-3 py-1.5 text-sm text-red-600 hover:text-red-800">Anular</a>
+    {% endif %}
     <a href="{{ url_for('constancias.listado') }}"
        class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900">Volver</a>
   </div>
 </div>
 
+{% if c.estado == 'anulada' %}
+<div class="bg-amber-50 border border-amber-300 rounded p-3 mb-5 text-sm text-amber-900">
+  <strong>Anulada el {{ (c.anulada_at or '')[:10] }}.</strong>
+  Motivo: {{ c.motivo_anulacion }}
+  <div class="text-xs mt-1 opacity-80">El motivo no se publica en la verificación.</div>
+</div>
+{% elif c.estado == 'reemplazada' %}
+<div class="bg-blue-50 border border-blue-300 rounded p-3 mb-5 text-sm text-blue-900">
+  <strong>Reemplazada por otra constancia.</strong>
+  {% if c.motivo_anulacion %}Motivo: {{ c.motivo_anulacion }}{% endif %}
+</div>
+{% else %}
 <div class="bg-amber-50 border border-amber-200 rounded p-3 mb-5 text-sm text-amber-900">
   <i class="fa-solid fa-lock"></i>
   Esta constancia <strong>no se puede modificar</strong>. La base de datos lo impide.
   Para corregir un dato hay que anularla y emitir una nueva.
 </div>
+{% endif %}
 
 <div class="grid md:grid-cols-2 gap-4">
   <section class="bg-white border rounded p-4">
