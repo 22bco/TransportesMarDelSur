@@ -11,13 +11,12 @@ Rutas (todas bajo /admin):
     /admin/cotizaciones/<id>/eliminar  - eliminar (POST)
 """
 import base64
-import contextlib
 import io
 import os
 import sqlite3
 import json
 from datetime import datetime, timedelta
-from functools import lru_cache, wraps
+from functools import lru_cache
 from pathlib import Path
 
 from flask import (
@@ -26,48 +25,20 @@ from flask import (
 )
 from weasyprint import HTML
 
+from auth import destino_seguro, login_required
+from db import get_db, init_wal
+
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 
 # --- BD ---------------------------------------------------------------
-
-DB_DIR = Path(os.environ.get('QUOTES_DB_DIR', '/app/data'))
-DB_PATH = DB_DIR / 'quotes.db'
-
-
-@contextlib.contextmanager
-def get_db():
-    """Context manager de conexión a la BD.
-
-    Garantiza que la conexión SIEMPRE se cierre: hace commit si el bloque
-    termina bien, rollback si lanza una excepción, y close() en todos los casos.
-    Esto evita la fuga de conexiones del patrón anterior (`with sqlite3.connect()`
-    hacía commit pero no cerraba).
-    """
-    DB_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    # Espera hasta 5s si la BD está bloqueada por otro worker antes de
-    # lanzar "database is locked" (mejora la robustez bajo concurrencia).
-    conn.execute("PRAGMA busy_timeout = 5000")
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+# get_db() vive en db.py: la comparten este módulo y el de constancias.
 
 
 def init_db():
-    DB_DIR.mkdir(parents=True, exist_ok=True)
+    init_wal()
     with get_db() as conn:
-        # WAL mejora la concurrencia lectura/escritura (lectores no bloquean
-        # al escritor y viceversa). Es un ajuste persistente del archivo .db.
-        conn.execute("PRAGMA journal_mode = WAL")
         conn.executescript("""
         CREATE TABLE IF NOT EXISTS quotes (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -161,14 +132,7 @@ def insert_quote(year, data):
 
 
 # --- Auth -------------------------------------------------------------
-
-def login_required(view):
-    @wraps(view)
-    def wrapped(*args, **kwargs):
-        if not session.get('admin'):
-            return redirect(url_for('admin.login', next=request.path))
-        return view(*args, **kwargs)
-    return wrapped
+# login_required y destino_seguro viven en auth.py.
 
 
 @admin_bp.route('/', methods=['GET'])
@@ -188,10 +152,8 @@ def login():
             session.clear()
             session['admin'] = True
             session.permanent = True
-            next_url = request.args.get('next') or url_for('admin.cotizaciones')
-            if not next_url.startswith('/admin'):
-                next_url = url_for('admin.cotizaciones')
-            return redirect(next_url)
+            return redirect(destino_seguro(request.args.get('next'),
+                                           url_for('admin.cotizaciones')))
         error = 'Contraseña incorrecta.'
     return render_template('admin/login.html', error=error)
 
