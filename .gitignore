@@ -58,6 +58,7 @@ docker-data/
 nginx/conf.d/*
 !nginx/conf.d/mardelsur.conf
 !nginx/conf.d/README.md
+!nginx/conf.d/00-cloudflare-realip.conf
 
 # static/: subdirectorios servidos para OTROS proyectos del VPS (~1,1 GB).
 # Ver deploy/INVENTARIO-VPS.md
