@@ -56,3 +56,5 @@ nginx/
 # Scripts (not needed in container)
 deploy.sh
 ssl-setup.sh
+requirements-dev.txt
+tests/
