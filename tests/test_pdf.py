@@ -88,3 +88,58 @@ def test_admin_tiene_sus_imports(nombre):
     """Los nombres que el refactor del Hito 0.5 movió o pudo perder."""
     import admin
     assert nombre in vars(admin), f'falta {nombre} en admin.py'
+
+
+# --- PDF de constancia ------------------------------------------------
+
+def test_constancia_cabe_en_una_pagina(app, datos_base, semilla):
+    """Caso extremo: todos los campos largos a la vez.
+
+    El documento tiene que caber en A4 sí o sí. Si crece a dos páginas, el QR
+    y el código quedan en una hoja distinta a los datos y el papel deja de
+    servir en terreno.
+    """
+    from constancias.pdf import n_paginas
+    from constancias.repositorio import emitir
+
+    datos_base.update(
+        metodo_medicion='contenedor', n_contenedores=99, tipo_contenedor_id=1,
+        n_viajes=99, cantidad_m3_cent=9_999_999, peso_kg_cent=9_999_999,
+        comprobante_destino='COMPROBANTE-MUY-LARGO-' + 'X' * 200,
+        receptor_nombre='María Fernanda de las Mercedes González Etchevarría',
+        receptor_cargo='Subgerenta de Operaciones y Medio Ambiente Zona Sur',
+        observaciones='Observación interna muy larga. ' * 50,
+    )
+    c = emitir(datos_base)
+    empresa = {'nombre': 'Transportes Mar del Sur SPA', 'rut': '77.779.818-9',
+               'direccion': 'Puerto Montt, Los Lagos',
+               'resolucion': 'Resolución Sanitaria N° 2510389969'}
+    assert n_paginas(c, empresa) == 1
+
+
+def test_constancia_pdf_lleva_codigo_y_leyenda(app, constancia):
+    """El código va en TEXTO, no solo en el QR: mucha gente lo teclea."""
+    from constancias.dominio import formatear_codigo
+    from constancias.pdf import render_html
+
+    empresa = {'nombre': 'Transportes Mar del Sur SPA', 'rut': '77.779.818-9',
+               'direccion': 'Puerto Montt', 'resolucion': 'Res. 2510389969'}
+    html = render_html(constancia, empresa)
+
+    assert formatear_codigo(constancia['codigo_verificacion']) in html
+    assert 'no constituye certificación' in html.lower()
+    assert 'data:image/png;base64,' in html          # el QR va embebido
+    for prohibida in ['entidad certificadora', 'organismo acreditado',
+                      'certificación oficial']:
+        assert prohibida not in html.lower()
+
+
+def test_constancia_pdf_no_incluye_observaciones(app, datos_base, semilla):
+    """Son notas internas y además harían crecer el documento."""
+    from constancias.pdf import render_html
+    from constancias.repositorio import emitir
+
+    datos_base['observaciones'] = 'SECRETO-INTERNO-QUE-NO-VA-AL-PDF'
+    c = emitir(datos_base)
+    empresa = {'nombre': 'X', 'rut': 'Y', 'direccion': 'Z', 'resolucion': 'W'}
+    assert 'SECRETO-INTERNO-QUE-NO-VA-AL-PDF' not in render_html(c, empresa)
