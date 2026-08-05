@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Verificar autenticidad de una constancia de retiro | Mar del Sur{% endblock %}
+{% block description %}Compruebe en línea que una constancia de retiro fue emitida por Transportes Mar del Sur y no ha sido alterada.{% endblock %}
+
+{# La página no se indexa mientras los textos están en revisión. #}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block content %}
+<section class="bg-light py-14">
+  <div class="max-w-xl mx-auto px-4">
+
+    <div class="text-center mb-8">
+      <h1 class="text-2xl md:text-3xl font-bold text-dark">Verificar autenticidad</h1>
+      <p class="text-gray-600 mt-2">
+        Compruebe que una constancia de retiro fue emitida por nosotros y no ha sido alterada.
+      </p>
+    </div>
+
+    {% if error %}
+    <div class="bg-red-50 border border-red-200 text-red-800 rounded p-3 mb-5 text-sm">
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('verificar.verificar') }}"
+          class="bg-white border rounded-lg p-6 shadow-sm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <label class="block mb-4">
+        <span class="text-sm font-semibold text-dark">Código de verificación</span>
+        <input type="text" name="codigo" required autofocus autocomplete="off"
+               spellcheck="false" placeholder="K7M2-9XQP-4RTF"
+               value="{{ codigo or '' }}"
+               class="w-full border rounded px-3 py-2 mt-1 font-mono text-lg tracking-wider uppercase">
+        <span class="text-xs text-gray-500">Está impreso al pie del documento, junto al código QR.</span>
+      </label>
+
+      <label class="block mb-5">
+        <span class="text-sm font-semibold text-dark">4 últimos caracteres del RUT del cliente</span>
+        <input type="text" name="rut4" required maxlength="4" autocomplete="off"
+               spellcheck="false" placeholder="4560"
+               class="w-full border rounded px-3 py-2 mt-1 font-mono text-lg tracking-wider uppercase">
+        <span class="text-xs text-gray-500">
+          Sin puntos ni guion. Por ejemplo, para el RUT 76.123.456-0 son <strong>4560</strong>.
+        </span>
+      </label>
+
+      <button type="submit"
+              class="w-full bg-hazard text-dark font-bold py-2.5 rounded hover:brightness-95 transition">
+        Verificar
+      </button>
+    </form>
+
+    <p class="text-xs text-gray-500 mt-6 leading-relaxed">
+      Esta verificación acredita que el documento fue emitido por Transportes Mar del Sur SPA
+      en una fecha determinada y que no ha sido alterado desde entonces.
+      No constituye certificación por parte de un organismo externo.
+    </p>
+
+  </div>
+</section>
+{% endblock %}

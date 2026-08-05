@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>{{ c.folio }}</title>
+<style>
+  /* Una sola página, sin pie corrido: este documento NO es multipágina.
+     El layout es fijo y los campos largos se truncan en Python. */
+  @page { size: A4; margin: 12mm; }
+
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    font-size: 9.5pt; color: #1a1a1a; margin: 0; line-height: 1.35;
+  }
+
+  /* REGLA DE IMPRESIÓN EN BLANCO Y NEGRO
+     El amarillo corporativo (#FFD600) en escala de grises queda casi blanco.
+     Por eso solo se usa como FONDO con texto oscuro encima, nunca como texto
+     ni como único portador de información. La jerarquía la dan el peso
+     tipográfico y los fondos grises. */
+  .hazard-bar {
+    height: 5px;
+    background: repeating-linear-gradient(45deg, #FFD600 0 14px, #1a1a1a 14px 28px);
+    margin-bottom: 10px;
+  }
+
+  table.head { width: 100%; border-collapse: collapse;
+               border-bottom: 2px solid #1a1a1a; margin-bottom: 12px; }
+  table.head td { vertical-align: middle; padding-bottom: 10px; }
+  td.logo { width: 66px; }
+  td.logo img { height: 54px; width: auto; }
+  td.titulo { padding-left: 10px; }
+  td.titulo h1 { margin: 0; font-size: 16pt; letter-spacing: .4px; }
+  td.titulo .sub { font-size: 8pt; color: #555; margin-top: 2px; }
+  td.folio { text-align: right; white-space: nowrap; }
+  td.folio .etq { font-size: 7.5pt; color: #555; text-transform: uppercase;
+                  letter-spacing: .8px; }
+  td.folio .num { font-family: 'Courier New', monospace; font-size: 15pt;
+                  font-weight: bold; letter-spacing: .5px; }
+
+  .cols { display: table; width: 100%; border-spacing: 8px 0; margin: 0 -8px 10px; }
+  .col  { display: table-cell; width: 50%; vertical-align: top; }
+
+  .caja { border: 1px solid #999; padding: 7px 9px; }
+  .caja h2, .seccion h2 {
+    margin: 0 0 5px; font-size: 7.5pt; text-transform: uppercase;
+    letter-spacing: 1px; color: #1a1a1a; border-bottom: 1px solid #ccc;
+    padding-bottom: 3px; font-weight: bold;
+  }
+  .caja .nombre { font-weight: bold; font-size: 10.5pt; }
+  .caja .dato { font-size: 8.5pt; color: #333; }
+
+  .seccion { margin-bottom: 10px; break-inside: avoid; }
+  table.campos { width: 100%; border-collapse: collapse; }
+  table.campos td { padding: 3px 8px 3px 0; vertical-align: top; }
+  table.campos td.k { font-size: 7.5pt; color: #555; text-transform: uppercase;
+                      letter-spacing: .5px; width: 26%; white-space: nowrap; }
+  table.campos td.v { font-size: 10pt; }
+  .destacado { font-weight: bold; }
+  /* Fondo gris, no amarillo: sobrevive a la fotocopiadora. */
+  .medicion { background: #ededed; padding: 2px 6px; font-weight: bold; }
+
+  .recibido { border: 1px solid #999; padding: 7px 9px; margin-bottom: 10px;
+              break-inside: avoid; }
+  .firma-espacio { height: 20mm; border-bottom: 1px solid #1a1a1a;
+                   margin-bottom: 4px; }
+  .firma-espacio img { max-height: 20mm; max-width: 60mm; }
+
+  table.pie { width: 100%; border-collapse: collapse; border-top: 2px solid #1a1a1a;
+              padding-top: 8px; margin-top: 4px; }
+  table.pie td { vertical-align: middle; padding-top: 8px; }
+  td.qr { width: 30mm; }
+  td.qr img { width: 28mm; height: 28mm; }
+  td.verif { padding-left: 10px; }
+  td.verif .instr { font-size: 8.5pt; color: #333; }
+  td.verif .url { font-size: 9.5pt; font-weight: bold; }
+  td.verif .codigo { font-family: 'Courier New', monospace; font-size: 13pt;
+                     font-weight: bold; letter-spacing: 1.5px; margin-top: 3px;
+                     background: #ededed; padding: 3px 7px; display: inline-block; }
+  td.verif .pista { font-size: 8pt; color: #555; margin-top: 3px; }
+
+  .legal { margin-top: 9px; font-size: 7.5pt; font-style: italic; color: #444;
+           line-height: 1.35; border-top: 1px solid #ccc; padding-top: 5px; }
+</style>
+</head>
+<body>
+
+<div class="hazard-bar"></div>
+
+<table class="head">
+  <tr>
+    {% if logo_uri %}<td class="logo"><img src="{{ logo_uri }}" alt=""></td>{% endif %}
+    <td class="titulo">
+      <h1>CONSTANCIA DE RETIRO</h1>
+      <div class="sub">Documento verificable en línea</div>
+    </td>
+    <td class="folio">
+      <div class="etq">Folio</div>
+      <div class="num">{{ c.folio }}</div>
+    </td>
+  </tr>
+</table>
+
+<div class="cols">
+  <div class="col">
+    <div class="caja">
+      <h2>Emitido por</h2>
+      <div class="nombre">{{ empresa.nombre }}</div>
+      <div class="dato">RUT {{ empresa.rut }}</div>
+      <div class="dato">{{ empresa.direccion }}</div>
+      <div class="dato">{{ empresa.resolucion }}</div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="caja">
+      <h2>Cliente</h2>
+      <div class="nombre">{{ c.snap_cliente_razon_social }}</div>
+      <div class="dato">RUT {{ c.snap_cliente_rut }}</div>
+      <div class="dato">Comuna de retiro: {{ c.snap_comuna_retiro }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="seccion">
+  <h2>Detalle del retiro</h2>
+  <table class="campos">
+    <tr>
+      <td class="k">Fecha</td>
+      <td class="v">
+        {% if c.fecha_retiro_inicio == c.fecha_retiro_termino %}
+          {{ c.fecha_retiro_inicio }}
+        {% else %}
+          {{ c.fecha_retiro_inicio }} al {{ c.fecha_retiro_termino }}
+        {% endif %}
+      </td>
+      <td class="k">Material</td>
+      <td class="v">{{ c.snap_tipo_material }}</td>
+    </tr>
+    <tr>
+      <td class="k">Cantidad</td>
+      <td class="v destacado">{{ cantidad }} m³</td>
+      {# El método de medición resuelve las disputas de "dice 12 m³ pero eran 8".
+         Va destacado a propósito. #}
+      <td class="k">Método de medición</td>
+      <td class="v"><span class="medicion">{{ metodo }}</span></td>
+    </tr>
+    <tr>
+      <td class="k">N.° de viajes</td>
+      <td class="v">{{ c.n_viajes }}</td>
+      <td class="k">Contenedores</td>
+      <td class="v">{% if c.n_contenedores %}{{ c.n_contenedores }}{% else %}—{% endif %}</td>
+    </tr>
+    {% if peso %}
+    <tr>
+      <td class="k">Peso</td>
+      <td class="v">{{ peso }} kg</td>
+      <td class="k"></td><td class="v"></td>
+    </tr>
+    {% endif %}
+  </table>
+</div>
+
+<div class="seccion">
+  <h2>Transporte y destino</h2>
+  <table class="campos">
+    <tr>
+      <td class="k">Destino</td>
+      <td class="v destacado">{{ c.snap_destino_nombre }}</td>
+      <td class="k">Comuna</td>
+      <td class="v">{{ c.snap_destino_comuna }}</td>
+    </tr>
+    <tr>
+      <td class="k">Tipo de operación</td>
+      <td class="v">{{ operacion }}</td>
+      <td class="k">Comprobante</td>
+      <td class="v">{% if comprobante %}{{ comprobante }}{% else %}—{% endif %}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="recibido">
+  <h2>Recibido conforme</h2>
+  <div class="firma-espacio">
+    {% if c.firma_path %}<img src="{{ c.firma_path }}" alt="">{% endif %}
+  </div>
+  <table class="campos">
+    <tr>
+      <td class="k">Nombre</td>
+      <td class="v">{{ c.receptor_nombre or '' }}</td>
+      <td class="k">Cargo</td>
+      <td class="v">{{ c.receptor_cargo or '' }}</td>
+    </tr>
+  </table>
+</div>
+
+<table class="pie">
+  <tr>
+    <td class="qr"><img src="{{ qr_uri }}" alt="Código QR de verificación"></td>
+    <td class="verif">
+      <div class="instr">Verifique la autenticidad de este documento en:</div>
+      <div class="url">{{ url_verificar.split('/verificar')[0].replace('https://', '') }}/verificar</div>
+      {# El código va también en TEXTO, no solo en el QR: mucha gente lo teclea. #}
+      <div class="codigo">{{ codigo_legible }}</div>
+      <div class="pista">Se le pedirán los 4 últimos caracteres del RUT del cliente.</div>
+    </td>
+  </tr>
+</table>
+
+<div class="legal">{{ leyenda_legal }}</div>
+
+</body>
+</html>

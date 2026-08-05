@@ -43,8 +43,15 @@ def crear_app(config=None):
     from admin import admin_bp, init_db
     app.register_blueprint(admin_bp)
 
+    from constancias.esquema import init_db_constancias
+    from constancias.rutas_admin import constancias_bp
+    from constancias.rutas_publicas import verificar_bp
+    app.register_blueprint(constancias_bp)
+    app.register_blueprint(verificar_bp)
+
     with app.app_context():
         init_db()
+        init_db_constancias()
 
     return app
 

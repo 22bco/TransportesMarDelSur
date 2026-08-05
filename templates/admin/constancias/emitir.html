@@ -1,0 +1,221 @@
+{% extends "admin/_base.html" %}
+{% set p = previo or {} %}
+{% block title %}Emitir constancia · Mar del Sur{% endblock %}
+
+{% block content %}
+<div class="mb-5">
+  <h1 class="text-xl font-bold">Emitir constancia de retiro</h1>
+  <p class="text-sm text-gray-500 mt-1">
+    Una vez emitida, la constancia <strong>no se puede modificar</strong>.
+    Para corregirla habrá que anularla y emitir una nueva.
+  </p>
+</div>
+
+<form method="post" class="space-y-5">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <section class="bg-white border rounded p-4">
+    <h2 class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">Cliente y lugar</h2>
+    <div class="grid md:grid-cols-2 gap-4">
+      <label class="block">
+        <span class="text-sm font-medium">Cliente *</span>
+        <select name="cliente_id" id="cliente_id" required class="w-full border rounded px-2 py-1.5 mt-1">
+          <option value="">— Seleccione —</option>
+          {% for c in clientes %}
+          <option value="{{ c.id }}" {% if p.get('cliente_id')|string == c.id|string %}selected{% endif %}>
+            {{ c.razon_social }} ({{ c.rut }})
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">Dirección de retiro *</span>
+        <select name="direccion_retiro_id" id="direccion_retiro_id" required class="w-full border rounded px-2 py-1.5 mt-1">
+          <option value="">— Seleccione —</option>
+          {% for d in direcciones %}
+          <option value="{{ d.id }}" data-cliente="{{ d.cliente_id }}"
+                  {% if p.get('direccion_retiro_id')|string == d.id|string %}selected{% endif %}>
+            {{ d.nombre_referencia }} — {{ d.calle }} {{ d.numero or '' }}, {{ d.comuna }}
+          </option>
+          {% endfor %}
+        </select>
+        <span class="text-xs text-gray-500">Debe pertenecer al cliente elegido.</span>
+      </label>
+    </div>
+  </section>
+
+  <section class="bg-white border rounded p-4">
+    <h2 class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">Retiro</h2>
+    <div class="grid md:grid-cols-2 gap-4">
+      <label class="block">
+        <span class="text-sm font-medium">Fecha de inicio *</span>
+        <input type="date" name="fecha_retiro_inicio" required
+               value="{{ p.get('fecha_retiro_inicio', '') }}"
+               class="w-full border rounded px-2 py-1.5 mt-1">
+        <span class="text-xs text-gray-500">No puede ser una fecha futura.</span>
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">Fecha de término</span>
+        <input type="date" name="fecha_retiro_termino"
+               value="{{ p.get('fecha_retiro_termino', '') }}"
+               class="w-full border rounded px-2 py-1.5 mt-1">
+        <span class="text-xs text-gray-500">Si se deja vacía, se usa la de inicio.</span>
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">Material *</span>
+        <select name="tipo_material_id" required class="w-full border rounded px-2 py-1.5 mt-1">
+          <option value="">— Seleccione —</option>
+          {% for m in materiales %}
+          <option value="{{ m.id }}" {% if p.get('tipo_material_id')|string == m.id|string %}selected{% endif %}>{{ m.nombre }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">Cantidad (m³) *</span>
+        <input type="text" name="cantidad_m3" required inputmode="decimal"
+               placeholder="12,10" value="{{ p.get('cantidad_m3', '') }}"
+               class="w-full border rounded px-2 py-1.5 mt-1">
+      </label>
+
+      <label class="block">
+        <span class="text-sm font-medium">Método de medición *</span>
+        <select name="metodo_medicion" id="metodo_medicion" required class="w-full border rounded px-2 py-1.5 mt-1">
+          <option value="">— Seleccione —</option>
+          <option value="contenedor"        {% if p.get('metodo_medicion') == 'contenedor' %}selected{% endif %}>Conteo de contenedores</option>
+          <option value="pesaje"            {% if p.get('metodo_medicion') == 'pesaje' %}selected{% endif %}>Pesaje en romana</option>
+          <option value="estimacion_visual" {% if p.get('metodo_medicion') == 'estimacion_visual' %}selected{% endif %}>Estimación visual</option>
+        </select>
+        <span class="text-xs text-gray-500">
+          Es el campo que resuelve las discusiones sobre la cantidad. Se imprime destacado.
+        </span>
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">Peso (kg)</span>
+        <input type="text" name="peso_kg" inputmode="decimal" placeholder="8500"
+               value="{{ p.get('peso_kg', '') }}" class="w-full border rounded px-2 py-1.5 mt-1">
+      </label>
+
+      <label class="block">
+        <span class="text-sm font-medium">N.° de contenedores</span>
+        <input type="number" name="n_contenedores" min="1" value="{{ p.get('n_contenedores', '') }}"
+               class="w-full border rounded px-2 py-1.5 mt-1">
+        <span class="text-xs text-gray-500">Obligatorio si el método es «conteo de contenedores».</span>
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">Tipo de contenedor</span>
+        <select name="tipo_contenedor_id" class="w-full border rounded px-2 py-1.5 mt-1">
+          <option value="">—</option>
+          {% for t in contenedores %}
+          <option value="{{ t.id }}" {% if p.get('tipo_contenedor_id')|string == t.id|string %}selected{% endif %}>{{ t.nombre }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">N.° de viajes</span>
+        <input type="number" name="n_viajes" min="1" value="{{ p.get('n_viajes', '1') }}"
+               class="w-full border rounded px-2 py-1.5 mt-1">
+      </label>
+    </div>
+  </section>
+
+  <section class="bg-white border rounded p-4">
+    <h2 class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">Transporte y destino</h2>
+    <div class="grid md:grid-cols-2 gap-4">
+      <label class="block">
+        <span class="text-sm font-medium">Destino *</span>
+        <select name="destino_id" required class="w-full border rounded px-2 py-1.5 mt-1">
+          <option value="">— Seleccione —</option>
+          {% for d in destinos %}
+          <option value="{{ d.id }}" {% if p.get('destino_id')|string == d.id|string %}selected{% endif %}>
+            {{ d.nombre }} — {{ d.comuna }}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">N.° de comprobante del destino</span>
+        <input type="text" name="comprobante_destino" maxlength="80"
+               value="{{ p.get('comprobante_destino', '') }}"
+               class="w-full border rounded px-2 py-1.5 mt-1">
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">Vehículo</span>
+        <select name="vehiculo_id" class="w-full border rounded px-2 py-1.5 mt-1">
+          <option value="">—</option>
+          {% for v in vehiculos %}
+          <option value="{{ v.id }}" {% if p.get('vehiculo_id')|string == v.id|string %}selected{% endif %}>{{ v.patente }}{% if v.tipo %} — {{ v.tipo }}{% endif %}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">Conductor</span>
+        <select name="conductor_id" class="w-full border rounded px-2 py-1.5 mt-1">
+          <option value="">—</option>
+          {% for co in conductores %}
+          <option value="{{ co.id }}" {% if p.get('conductor_id')|string == co.id|string %}selected{% endif %}>{{ co.nombre }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="bg-white border rounded p-4">
+    <h2 class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">Recibido conforme</h2>
+    <div class="grid md:grid-cols-3 gap-4">
+      <label class="block">
+        <span class="text-sm font-medium">Nombre del receptor</span>
+        <input type="text" name="receptor_nombre" value="{{ p.get('receptor_nombre', '') }}"
+               class="w-full border rounded px-2 py-1.5 mt-1">
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">RUT del receptor</span>
+        <input type="text" name="receptor_rut" placeholder="12.345.678-5"
+               value="{{ p.get('receptor_rut', '') }}"
+               class="w-full border rounded px-2 py-1.5 mt-1">
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium">Cargo</span>
+        <input type="text" name="receptor_cargo" value="{{ p.get('receptor_cargo', '') }}"
+               class="w-full border rounded px-2 py-1.5 mt-1">
+      </label>
+    </div>
+    <label class="block mt-4">
+      <span class="text-sm font-medium">Observaciones internas</span>
+      <textarea name="observaciones" rows="2"
+                class="w-full border rounded px-2 py-1.5 mt-1">{{ p.get('observaciones', '') }}</textarea>
+      <span class="text-xs text-gray-500">
+        No aparecen en el PDF ni en la página pública de verificación.
+      </span>
+    </label>
+  </section>
+
+  <div class="flex items-center gap-3">
+    <button type="submit" class="btn-primary">
+      <i class="fa-solid fa-file-circle-check"></i> Emitir constancia
+    </button>
+    <a href="{{ url_for('constancias.listado') }}" class="text-sm text-gray-500 hover:text-gray-800">Cancelar</a>
+  </div>
+</form>
+
+<script>
+  // Filtra las direcciones según el cliente elegido: es la regla RN-08, que la
+  // base de datos hace cumplir igualmente con un trigger. Esto solo evita el
+  // viaje al servidor para un error evitable.
+  (function () {
+    var cliente = document.getElementById('cliente_id');
+    var dirs = document.getElementById('direccion_retiro_id');
+    if (!cliente || !dirs) return;
+    var todas = Array.prototype.slice.call(dirs.options);
+
+    function filtrar() {
+      var id = cliente.value;
+      dirs.innerHTML = '';
+      todas.forEach(function (op) {
+        if (!op.value || !id || op.dataset.cliente === id) dirs.appendChild(op);
+      });
+    }
+    cliente.addEventListener('change', filtrar);
+    filtrar();
+  })();
+</script>
+{% endblock %}

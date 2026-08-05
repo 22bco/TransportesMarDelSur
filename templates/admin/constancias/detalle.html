@@ -1,0 +1,103 @@
+{% extends "admin/_base.html" %}
+{% block title %}{{ c.folio }} · Mar del Sur{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-xl font-bold font-mono">{{ c.folio }}</h1>
+    <p class="text-sm text-gray-500 mt-1">
+      Emitida el {{ c.emitida_fecha_local }} ·
+      {% if c.estado == 'vigente' %}<span class="text-green-700">Vigente</span>
+      {% elif c.estado == 'anulada' %}<span class="text-amber-700">Anulada</span>
+      {% else %}<span class="text-blue-700">Reemplazada</span>{% endif %}
+    </p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{{ url_for('constancias.pdf', constancia_id=c.id) }}" class="btn-primary">
+      <i class="fa-solid fa-file-pdf"></i> Descargar PDF
+    </a>
+    <a href="{{ url_for('constancias.listado') }}"
+       class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900">Volver</a>
+  </div>
+</div>
+
+<div class="bg-amber-50 border border-amber-200 rounded p-3 mb-5 text-sm text-amber-900">
+  <i class="fa-solid fa-lock"></i>
+  Esta constancia <strong>no se puede modificar</strong>. La base de datos lo impide.
+  Para corregir un dato hay que anularla y emitir una nueva.
+</div>
+
+<div class="grid md:grid-cols-2 gap-4">
+  <section class="bg-white border rounded p-4">
+    <h2 class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">Verificación</h2>
+    <dl class="text-sm space-y-2">
+      <div><dt class="text-gray-500">Código</dt>
+           <dd class="font-mono text-lg font-bold">{{ codigo_legible }}</dd></div>
+      <div><dt class="text-gray-500">Enlace público</dt>
+           <dd><a href="{{ url_verificar }}" target="_blank" rel="noopener"
+                  class="text-blue-700 hover:underline break-all">{{ url_verificar }}</a></dd></div>
+      <div><dt class="text-gray-500">Segundo factor</dt>
+           <dd>Se piden los 4 últimos caracteres del RUT del cliente.</dd></div>
+    </dl>
+  </section>
+
+  <section class="bg-white border rounded p-4">
+    <h2 class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">Integridad</h2>
+    <dl class="text-sm space-y-2">
+      <div><dt class="text-gray-500">Hash de este documento</dt>
+           <dd class="font-mono text-xs break-all">{{ c.hash_actual }}</dd></div>
+      <div><dt class="text-gray-500">Encadena con</dt>
+           <dd class="font-mono text-xs break-all">{{ c.hash_anterior }}</dd></div>
+    </dl>
+    <p class="text-xs text-gray-500 mt-3">
+      Alterar esta constancia obligaría a recalcular todas las posteriores.
+    </p>
+  </section>
+
+  <section class="bg-white border rounded p-4">
+    <h2 class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">Cliente y lugar</h2>
+    <dl class="text-sm space-y-2">
+      <div><dt class="text-gray-500">Cliente</dt><dd>{{ c.snap_cliente_razon_social }}</dd></div>
+      <div><dt class="text-gray-500">RUT</dt><dd>{{ c.snap_cliente_rut }}</dd></div>
+      <div><dt class="text-gray-500">Comuna de retiro</dt><dd>{{ c.snap_comuna_retiro }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="bg-white border rounded p-4">
+    <h2 class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">Retiro</h2>
+    <dl class="text-sm space-y-2">
+      <div><dt class="text-gray-500">Fecha</dt>
+           <dd>{{ c.fecha_retiro_inicio }}{% if c.fecha_retiro_termino != c.fecha_retiro_inicio %} al {{ c.fecha_retiro_termino }}{% endif %}</dd></div>
+      <div><dt class="text-gray-500">Material</dt><dd>{{ c.snap_tipo_material }}</dd></div>
+      <div><dt class="text-gray-500">Cantidad</dt><dd class="font-semibold">{{ cantidad }} m³</dd></div>
+      <div><dt class="text-gray-500">Método de medición</dt><dd class="font-semibold">{{ metodo }}</dd></div>
+      {% if peso %}<div><dt class="text-gray-500">Peso</dt><dd>{{ peso }} kg</dd></div>{% endif %}
+      <div><dt class="text-gray-500">Viajes</dt><dd>{{ c.n_viajes }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="bg-white border rounded p-4">
+    <h2 class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">Destino</h2>
+    <dl class="text-sm space-y-2">
+      <div><dt class="text-gray-500">Destino</dt><dd>{{ c.snap_destino_nombre }}</dd></div>
+      <div><dt class="text-gray-500">Comuna</dt><dd>{{ c.snap_destino_comuna }}</dd></div>
+      <div><dt class="text-gray-500">Operación</dt><dd>{{ operacion }}</dd></div>
+      {% if c.comprobante_destino %}
+      <div><dt class="text-gray-500">Comprobante</dt><dd>{{ c.comprobante_destino }}</dd></div>{% endif %}
+    </dl>
+  </section>
+
+  <section class="bg-white border rounded p-4">
+    <h2 class="text-xs uppercase tracking-wide text-gray-500 font-semibold mb-3">
+      Recibido conforme <span class="normal-case tracking-normal text-gray-400">· no se publica</span>
+    </h2>
+    <dl class="text-sm space-y-2">
+      <div><dt class="text-gray-500">Nombre</dt><dd>{{ c.receptor_nombre or '—' }}</dd></div>
+      <div><dt class="text-gray-500">RUT</dt><dd>{{ c.receptor_rut or '—' }}</dd></div>
+      <div><dt class="text-gray-500">Cargo</dt><dd>{{ c.receptor_cargo or '—' }}</dd></div>
+      {% if c.observaciones %}
+      <div><dt class="text-gray-500">Observaciones internas</dt><dd>{{ c.observaciones }}</dd></div>{% endif %}
+    </dl>
+  </section>
+</div>
+{% endblock %}

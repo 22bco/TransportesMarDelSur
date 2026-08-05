@@ -10,7 +10,8 @@
     <meta name="description" content="{% block description %}Transportes Mar del Sur - Transporte especializado de sustancias peligrosas (RESPEL) y residuos hospitalarios (REAS) en Chile. Resolución Sanitaria vigente N° 2510389969, inscripción SIDREP, GPS 24/7. Cobertura nacional desde Puerto Montt.{% endblock %}">
     <meta name="keywords" content="transporte respel, transporte reas, sustancias peligrosas chile, residuos peligrosos puerto montt, resolución sanitaria, sidrep, transporte residuos hospitalarios, logística respel, transporte materiales peligrosos, ds 298, transporte carga peligrosa chile, transporte residuos salud">
     <meta name="author" content="Transportes Mar del Sur SPA">
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    {# Las páginas internas o en revisión lo sobreescriben con noindex. #}
+    {% block robots %}<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">{% endblock %}
     <link rel="canonical" href="{% block canonical %}https://www.transportesmardelsur.cl/{% endblock %}">
 
     <!-- Geo Tags -->

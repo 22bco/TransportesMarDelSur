@@ -1,0 +1,65 @@
+{% extends "admin/_base.html" %}
+{% block title %}Constancias · Mar del Sur{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-xl font-bold">Constancias de retiro</h1>
+    <p class="text-sm text-gray-500 mt-1">Documentos emitidos, verificables en línea.</p>
+  </div>
+  <a href="{{ url_for('constancias.emitir_constancia') }}" class="btn-primary">
+    <i class="fa-solid fa-plus"></i> Emitir constancia
+  </a>
+</div>
+
+{% if not constancias %}
+  <div class="bg-white border rounded p-8 text-center text-gray-500">
+    <p class="mb-3">Todavía no hay constancias emitidas.</p>
+    <a href="{{ url_for('constancias.emitir_constancia') }}" class="btn-primary">Emitir la primera</a>
+  </div>
+{% else %}
+  <div class="bg-white border rounded overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-100 text-left">
+        <tr>
+          <th class="px-3 py-2 font-semibold">Folio</th>
+          <th class="px-3 py-2 font-semibold">Estado</th>
+          <th class="px-3 py-2 font-semibold">Fecha de retiro</th>
+          <th class="px-3 py-2 font-semibold">Cliente</th>
+          <th class="px-3 py-2 font-semibold">Material</th>
+          <th class="px-3 py-2 font-semibold text-right">m³</th>
+          <th class="px-3 py-2 font-semibold">Destino</th>
+          <th class="px-3 py-2"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in constancias %}
+        <tr class="border-t hover:bg-gray-50">
+          <td class="px-3 py-2 font-mono">{{ c.folio }}</td>
+          <td class="px-3 py-2">
+            {% if c.estado == 'vigente' %}
+              <span class="text-green-700">● Vigente</span>
+            {% elif c.estado == 'anulada' %}
+              <span class="text-amber-700">● Anulada</span>
+            {% else %}
+              <span class="text-blue-700">● Reemplazada</span>
+            {% endif %}
+          </td>
+          <td class="px-3 py-2">{{ c.fecha_retiro_inicio }}</td>
+          <td class="px-3 py-2">{{ c.snap_cliente_razon_social }}</td>
+          <td class="px-3 py-2">{{ c.snap_tipo_material }}</td>
+          <td class="px-3 py-2 text-right">{{ fmt_m3_es(c.cantidad_m3_cent) }}</td>
+          <td class="px-3 py-2">{{ c.snap_destino_nombre }}</td>
+          <td class="px-3 py-2 text-right whitespace-nowrap">
+            <a href="{{ url_for('constancias.ver', constancia_id=c.id) }}"
+               class="text-gray-600 hover:text-gray-900">Ver</a>
+            <a href="{{ url_for('constancias.pdf', constancia_id=c.id) }}"
+               class="ml-2 text-gray-600 hover:text-gray-900">PDF</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

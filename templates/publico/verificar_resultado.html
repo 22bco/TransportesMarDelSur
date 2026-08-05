@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Constancia {{ d.folio }} | Mar del Sur{% endblock %}
+{% block description %}Resultado de la verificación de la constancia de retiro {{ d.folio }}.{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{#
+  Esta plantilla recibe SOLO el diccionario `d` que construye payload_publico().
+  Nunca la fila de la base de datos. Así, un {{ d.observaciones }} escrito por
+  descuido no imprime nada en vez de filtrar un campo reservado.
+#}
+
+{% block content %}
+<section class="bg-light py-14">
+  <div class="max-w-2xl mx-auto px-4">
+
+    {% if d.estado == 'vigente' %}
+      <div class="bg-green-50 border-l-4 border-green-600 rounded p-5 mb-6">
+        <h1 class="text-xl font-bold text-green-900">Documento verificado</h1>
+        <p class="text-green-800 text-sm mt-1">
+          Este documento existe en el registro del prestador y no ha sido alterado.
+        </p>
+      </div>
+    {% elif d.estado == 'anulada' %}
+      <div class="bg-amber-50 border-l-4 border-amber-500 rounded p-5 mb-6">
+        <h1 class="text-xl font-bold text-amber-900">Documento anulado</h1>
+        <p class="text-amber-800 text-sm mt-1">
+          Esta constancia fue emitida por el prestador, pero quedó anulada
+          {% if d.anulada_fecha %}el {{ d.anulada_fecha }}{% endif %}.
+          No debe considerarse vigente.
+        </p>
+      </div>
+    {% elif d.estado == 'reemplazada' %}
+      <div class="bg-blue-50 border-l-4 border-blue-600 rounded p-5 mb-6">
+        <h1 class="text-xl font-bold text-blue-900">Documento reemplazado</h1>
+        <p class="text-blue-800 text-sm mt-1">
+          Esta constancia fue reemplazada por el folio
+          <strong>{{ d.reemplazada_por_folio or '—' }}</strong>.
+          {# Solo el folio: enlazar con el código de la nueva la expondría sin
+             su segundo factor. #}
+          Verifique ese documento con su propio código.
+        </p>
+      </div>
+    {% endif %}
+
+    <div class="bg-white border rounded-lg overflow-hidden">
+      <div class="px-5 py-3 bg-dark text-white flex items-center justify-between">
+        <span class="text-xs uppercase tracking-widest opacity-80">Constancia de retiro</span>
+        <span class="font-mono font-bold">{{ d.folio }}</span>
+      </div>
+
+      <dl class="divide-y text-sm">
+        <div class="px-5 py-3 grid grid-cols-3 gap-3">
+          <dt class="text-gray-500">Emitido por</dt>
+          <dd class="col-span-2 font-semibold">{{ d.emisor_razon_social }}
+            <span class="font-normal text-gray-500">· RUT {{ d.emisor_rut }}</span></dd>
+        </div>
+        <div class="px-5 py-3 grid grid-cols-3 gap-3">
+          <dt class="text-gray-500">Cliente</dt>
+          <dd class="col-span-2">{{ d.cliente_razon_social }}</dd>
+        </div>
+        <div class="px-5 py-3 grid grid-cols-3 gap-3">
+          <dt class="text-gray-500">Fecha del retiro</dt>
+          <dd class="col-span-2">
+            {{ d.fecha_retiro_inicio }}{% if d.fecha_retiro_termino != d.fecha_retiro_inicio %} al {{ d.fecha_retiro_termino }}{% endif %}
+          </dd>
+        </div>
+        <div class="px-5 py-3 grid grid-cols-3 gap-3">
+          <dt class="text-gray-500">Comuna del retiro</dt>
+          <dd class="col-span-2">{{ d.comuna_retiro }}</dd>
+        </div>
+        <div class="px-5 py-3 grid grid-cols-3 gap-3">
+          <dt class="text-gray-500">Material</dt>
+          <dd class="col-span-2">{{ d.tipo_material }}</dd>
+        </div>
+        <div class="px-5 py-3 grid grid-cols-3 gap-3">
+          <dt class="text-gray-500">Cantidad</dt>
+          <dd class="col-span-2 font-semibold">{{ d.cantidad_m3 }} m³
+            <span class="font-normal text-gray-500">· {{ d.metodo_medicion }}</span></dd>
+        </div>
+        <div class="px-5 py-3 grid grid-cols-3 gap-3">
+          <dt class="text-gray-500">Destino</dt>
+          <dd class="col-span-2">{{ d.destino_nombre }}
+            <span class="text-gray-500">· {{ d.destino_comuna }} · {{ d.destino_operacion }}</span></dd>
+        </div>
+      </dl>
+    </div>
+
+    <p class="text-xs text-gray-500 mt-6 leading-relaxed">
+      Esta verificación acredita la emisión e integridad del documento:
+      confirma que fue emitido por {{ d.emisor_razon_social }} y que su contenido
+      no ha cambiado. <strong>No constituye certificación por parte de un organismo
+      externo</strong> ni acredita por sí sola la realización del servicio.
+      Los datos del receptor en terreno, la dirección exacta del retiro y los
+      respaldos fotográficos no se publican.
+    </p>
+
+    <div class="mt-6">
+      <a href="{{ url_for('verificar.formulario') }}"
+         class="text-sm text-gray-600 hover:text-dark">← Verificar otro documento</a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
