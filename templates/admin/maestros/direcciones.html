@@ -1,0 +1,63 @@
+{% extends "admin/_base.html" %}
+{% block title %}Direcciones de retiro · Mar del Sur{% endblock %}
+{% block content %}
+<h1 class="text-xl font-bold mb-1">Direcciones de retiro</h1>
+<p class="text-sm text-gray-500 mb-5">
+  Un cliente puede tener varias faenas. Al emitir, la dirección debe pertenecer
+  al cliente elegido: la base de datos lo verifica (RN-08).
+</p>
+
+<form method="post" action="{{ url_for('maestros.direccion_nueva') }}"
+      class="bg-white border rounded p-4 mb-6 grid md:grid-cols-3 gap-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label class="block"><span class="text-sm font-medium">Cliente *</span>
+    <select name="cliente_id" required class="w-full border rounded px-2 py-1.5 mt-1">
+      <option value="">— Seleccione —</option>
+      {% for c in clientes %}<option value="{{ c.id }}">{{ c.razon_social }}</option>{% endfor %}
+    </select></label>
+  <label class="block"><span class="text-sm font-medium">Nombre de la faena *</span>
+    <input type="text" name="nombre_referencia" required placeholder="Planta Chinquihue"
+           class="w-full border rounded px-2 py-1.5 mt-1"></label>
+  <label class="block"><span class="text-sm font-medium">Comuna *</span>
+    <select name="comuna_id" required class="w-full border rounded px-2 py-1.5 mt-1">
+      {% for co in comunas %}<option value="{{ co.id }}">{{ co.nombre }}</option>{% endfor %}
+    </select></label>
+  <label class="block"><span class="text-sm font-medium">Calle *</span>
+    <input type="text" name="calle" required class="w-full border rounded px-2 py-1.5 mt-1"></label>
+  <label class="block"><span class="text-sm font-medium">Número</span>
+    <input type="text" name="numero" class="w-full border rounded px-2 py-1.5 mt-1"></label>
+  <div class="flex items-end">
+    <button type="submit" class="btn-primary w-full"><i class="fa-solid fa-plus"></i> Agregar</button>
+  </div>
+</form>
+
+<div class="bg-white border rounded overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-100 text-left"><tr>
+      <th class="px-3 py-2 font-semibold">Cliente</th>
+      <th class="px-3 py-2 font-semibold">Faena</th>
+      <th class="px-3 py-2 font-semibold">Dirección</th>
+      <th class="px-3 py-2 font-semibold">Comuna</th>
+      <th class="px-3 py-2"></th>
+    </tr></thead>
+    <tbody>
+      {% for d in direcciones %}
+      <tr class="border-t {% if not d.activo %}opacity-50{% endif %}">
+        <td class="px-3 py-2">{{ d.cliente }}</td>
+        <td class="px-3 py-2 font-medium">{{ d.nombre_referencia }}</td>
+        <td class="px-3 py-2">{{ d.calle }} {{ d.numero or '' }}</td>
+        <td class="px-3 py-2">{{ d.comuna }}</td>
+        <td class="px-3 py-2 text-right">
+          <form method="post" action="{{ url_for('maestros.direccion_activar', direccion_id=d.id) }}" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="text-gray-600 hover:text-gray-900">{{ 'Desactivar' if d.activo else 'Activar' }}</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="px-3 py-6 text-center text-gray-500">Sin direcciones.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

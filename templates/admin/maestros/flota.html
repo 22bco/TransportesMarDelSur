@@ -1,0 +1,65 @@
+{% extends "admin/_base.html" %}
+{% block title %}Flota · Mar del Sur{% endblock %}
+{% block content %}
+<h1 class="text-xl font-bold mb-5">Vehículos y conductores</h1>
+
+<div class="grid md:grid-cols-2 gap-6">
+  <div>
+    <h2 class="font-semibold mb-3">Vehículos</h2>
+    <form method="post" class="bg-white border rounded p-4 mb-4 space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_registro" value="vehiculo">
+      <label class="block"><span class="text-sm font-medium">Patente *</span>
+        <input type="text" name="patente" required placeholder="KXTR-45"
+               class="w-full border rounded px-2 py-1.5 mt-1 uppercase"></label>
+      <label class="block"><span class="text-sm font-medium">Tipo</span>
+        <input type="text" name="tipo" placeholder="Camión ampliroll"
+               class="w-full border rounded px-2 py-1.5 mt-1"></label>
+      <label class="block"><span class="text-sm font-medium">Capacidad (m³)</span>
+        <input type="text" name="capacidad_m3" inputmode="decimal" placeholder="12"
+               class="w-full border rounded px-2 py-1.5 mt-1"></label>
+      <button type="submit" class="btn-primary w-full"><i class="fa-solid fa-plus"></i> Agregar vehículo</button>
+    </form>
+    <div class="bg-white border rounded">
+      <table class="w-full text-sm">
+        <tbody>
+          {% for v in vehiculos %}
+          <tr class="border-b last:border-0 {% if not v.activo %}opacity-50{% endif %}">
+            <td class="px-3 py-2 font-mono font-medium">{{ v.patente }}</td>
+            <td class="px-3 py-2 text-gray-600">{{ v.tipo or '—' }}</td>
+          </tr>
+          {% else %}<tr><td class="px-3 py-6 text-center text-gray-500">Sin vehículos.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <h2 class="font-semibold mb-3">Conductores</h2>
+    <form method="post" class="bg-white border rounded p-4 mb-4 space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_registro" value="conductor">
+      <label class="block"><span class="text-sm font-medium">Nombre *</span>
+        <input type="text" name="nombre" required class="w-full border rounded px-2 py-1.5 mt-1"></label>
+      <label class="block"><span class="text-sm font-medium">RUT</span>
+        <input type="text" name="rut" placeholder="12.345.678-5" class="w-full border rounded px-2 py-1.5 mt-1">
+        <span class="text-xs text-gray-500">No se publica en la verificación.</span></label>
+      <label class="block"><span class="text-sm font-medium">Teléfono</span>
+        <input type="text" name="telefono" class="w-full border rounded px-2 py-1.5 mt-1"></label>
+      <button type="submit" class="btn-primary w-full"><i class="fa-solid fa-plus"></i> Agregar conductor</button>
+    </form>
+    <div class="bg-white border rounded">
+      <table class="w-full text-sm">
+        <tbody>
+          {% for co in conductores %}
+          <tr class="border-b last:border-0 {% if not co.activo %}opacity-50{% endif %}">
+            <td class="px-3 py-2 font-medium">{{ co.nombre }}</td>
+            <td class="px-3 py-2 text-gray-600 font-mono">{{ co.rut or '—' }}</td>
+          </tr>
+          {% else %}<tr><td class="px-3 py-6 text-center text-gray-500">Sin conductores.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

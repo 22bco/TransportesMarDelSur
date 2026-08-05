@@ -1,0 +1,56 @@
+{% extends "admin/_base.html" %}
+{% block title %}Catálogos · Mar del Sur{% endblock %}
+{% block content %}
+<h1 class="text-xl font-bold mb-5">Catálogos</h1>
+
+<div class="grid md:grid-cols-3 gap-6">
+  <div>
+    <h2 class="font-semibold mb-3">Materiales</h2>
+    <form method="post" class="bg-white border rounded p-4 mb-4 space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_registro" value="material">
+      <input type="text" name="nombre" required placeholder="Nombre del material"
+             class="w-full border rounded px-2 py-1.5">
+      <button type="submit" class="btn-primary w-full text-sm">Agregar</button>
+    </form>
+    <ul class="bg-white border rounded divide-y text-sm">
+      {% for m in materiales %}<li class="px-3 py-2 {% if not m.activo %}opacity-50{% endif %}">{{ m.nombre }}</li>
+      {% else %}<li class="px-3 py-6 text-center text-gray-500">Sin materiales.</li>{% endfor %}
+    </ul>
+  </div>
+
+  <div>
+    <h2 class="font-semibold mb-3">Tipos de contenedor</h2>
+    <form method="post" class="bg-white border rounded p-4 mb-4 space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_registro" value="contenedor">
+      <input type="text" name="nombre" required placeholder="Contenedor 5 m3"
+             class="w-full border rounded px-2 py-1.5">
+      <input type="text" name="capacidad_m3" inputmode="decimal" placeholder="Capacidad m³"
+             class="w-full border rounded px-2 py-1.5">
+      <button type="submit" class="btn-primary w-full text-sm">Agregar</button>
+    </form>
+    <ul class="bg-white border rounded divide-y text-sm">
+      {% for t in contenedores %}<li class="px-3 py-2 {% if not t.activo %}opacity-50{% endif %}">{{ t.nombre }}</li>
+      {% else %}<li class="px-3 py-6 text-center text-gray-500">Sin tipos.</li>{% endfor %}
+    </ul>
+  </div>
+
+  <div>
+    <h2 class="font-semibold mb-3">Comunas</h2>
+    <form method="post" class="bg-white border rounded p-4 mb-4 space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tipo_registro" value="comuna">
+      <input type="text" name="nombre" required placeholder="Nombre de la comuna"
+             class="w-full border rounded px-2 py-1.5">
+      <input type="text" name="region" placeholder="Región" value="Los Lagos"
+             class="w-full border rounded px-2 py-1.5">
+      <button type="submit" class="btn-primary w-full text-sm">Agregar</button>
+    </form>
+    <ul class="bg-white border rounded divide-y text-sm">
+      {% for co in comunas %}<li class="px-3 py-2">{{ co.nombre }}
+        <span class="text-gray-400 text-xs">· {{ co.region }}</span></li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

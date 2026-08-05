@@ -1,0 +1,66 @@
+{% extends "admin/_base.html" %}
+{% set v = previo or c or {} %}
+{% block title %}{{ 'Editar' if c else 'Nuevo' }} cliente · Mar del Sur{% endblock %}
+{% block content %}
+<h1 class="text-xl font-bold mb-5">{{ 'Editar cliente' if c else 'Nuevo cliente' }}</h1>
+
+<form method="post" class="max-w-2xl space-y-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="bg-white border rounded p-4 grid md:grid-cols-2 gap-4">
+    <label class="block md:col-span-2">
+      <span class="text-sm font-medium">Razón social *</span>
+      <input type="text" name="razon_social" required value="{{ v.get('razon_social') or '' }}"
+             class="w-full border rounded px-2 py-1.5 mt-1">
+    </label>
+    <label class="block">
+      <span class="text-sm font-medium">RUT *</span>
+      <input type="text" name="rut" required placeholder="76.123.456-0"
+             value="{{ v.get('rut') or '' }}" class="w-full border rounded px-2 py-1.5 mt-1">
+      <span class="text-xs text-gray-500">Se valida el dígito verificador.</span>
+    </label>
+    <label class="block">
+      <span class="text-sm font-medium">Giro</span>
+      <input type="text" name="giro" value="{{ v.get('giro') or '' }}"
+             class="w-full border rounded px-2 py-1.5 mt-1">
+    </label>
+    <label class="block">
+      <span class="text-sm font-medium">Dirección tributaria</span>
+      <input type="text" name="direccion_tributaria" value="{{ v.get('direccion_tributaria') or '' }}"
+             class="w-full border rounded px-2 py-1.5 mt-1">
+    </label>
+    <label class="block">
+      <span class="text-sm font-medium">Comuna</span>
+      <select name="comuna_id" class="w-full border rounded px-2 py-1.5 mt-1">
+        <option value="">—</option>
+        {% for co in comunas %}
+        <option value="{{ co.id }}" {% if v.get('comuna_id')|string == co.id|string %}selected{% endif %}>{{ co.nombre }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="block">
+      <span class="text-sm font-medium">Contacto</span>
+      <input type="text" name="contacto_nombre" value="{{ v.get('contacto_nombre') or '' }}"
+             class="w-full border rounded px-2 py-1.5 mt-1">
+    </label>
+    <label class="block">
+      <span class="text-sm font-medium">Correo</span>
+      <input type="email" name="contacto_email" value="{{ v.get('contacto_email') or '' }}"
+             class="w-full border rounded px-2 py-1.5 mt-1">
+    </label>
+    <label class="block">
+      <span class="text-sm font-medium">Teléfono</span>
+      <input type="text" name="contacto_telefono" value="{{ v.get('contacto_telefono') or '' }}"
+             class="w-full border rounded px-2 py-1.5 mt-1">
+    </label>
+    <label class="flex items-center gap-2 md:col-span-2">
+      <input type="checkbox" name="activo" {% if v.get('activo', 1) %}checked{% endif %}>
+      <span class="text-sm">Activo</span>
+      <span class="text-xs text-gray-500">Los inactivos no aparecen al emitir.</span>
+    </label>
+  </div>
+  <div class="flex gap-3">
+    <button type="submit" class="btn-primary"><i class="fa-solid fa-check"></i> Guardar</button>
+    <a href="{{ url_for('maestros.clientes') }}" class="px-3 py-1.5 text-sm text-gray-600">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "admin/_base.html" %}
+{% block title %}Destinos · Mar del Sur{% endblock %}
+{% block content %}
+<h1 class="text-xl font-bold mb-1">Destinos</h1>
+<p class="text-sm text-gray-500 mb-5">Dónde termina el material. El nombre y la comuna se publican en la verificación.</p>
+
+<form method="post" class="bg-white border rounded p-4 mb-6 grid md:grid-cols-3 gap-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label class="block"><span class="text-sm font-medium">Nombre *</span>
+    <input type="text" name="nombre" required class="w-full border rounded px-2 py-1.5 mt-1"></label>
+  <label class="block"><span class="text-sm font-medium">Comuna *</span>
+    <select name="comuna_id" required class="w-full border rounded px-2 py-1.5 mt-1">
+      {% for co in comunas %}<option value="{{ co.id }}">{{ co.nombre }}</option>{% endfor %}
+    </select></label>
+  <label class="block"><span class="text-sm font-medium">Tipo de operación *</span>
+    <select name="tipo_operacion" required class="w-full border rounded px-2 py-1.5 mt-1">
+      <option value="disposicion_final">Disposición final</option>
+      <option value="reciclaje">Reciclaje</option>
+      <option value="valorizacion">Valorización</option>
+    </select></label>
+  <label class="block"><span class="text-sm font-medium">Dirección</span>
+    <input type="text" name="direccion" class="w-full border rounded px-2 py-1.5 mt-1"></label>
+  <label class="block"><span class="text-sm font-medium">N.° de autorización</span>
+    <input type="text" name="autorizacion" class="w-full border rounded px-2 py-1.5 mt-1"></label>
+  <div class="flex items-end">
+    <button type="submit" class="btn-primary w-full"><i class="fa-solid fa-plus"></i> Agregar</button>
+  </div>
+</form>
+
+<div class="bg-white border rounded overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-100 text-left"><tr>
+      <th class="px-3 py-2 font-semibold">Destino</th>
+      <th class="px-3 py-2 font-semibold">Comuna</th>
+      <th class="px-3 py-2 font-semibold">Operación</th>
+      <th class="px-3 py-2 font-semibold">Autorización</th>
+    </tr></thead>
+    <tbody>
+      {% for d in destinos %}
+      <tr class="border-t {% if not d.activo %}opacity-50{% endif %}">
+        <td class="px-3 py-2 font-medium">{{ d.nombre }}</td>
+        <td class="px-3 py-2">{{ d.comuna }}</td>
+        <td class="px-3 py-2">{{ d.tipo_operacion.replace('_',' ')|capitalize }}</td>
+        <td class="px-3 py-2">{{ d.autorizacion or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="px-3 py-6 text-center text-gray-500">Sin destinos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
