@@ -1,17 +1,27 @@
 # /etc/cron.d/mardelsur: tareas programadas de Transportes Mar del Sur
 #
-# - Respaldo diario de la base de datos de cotizaciones (quotes.db).
-# - Recarga diaria de nginx para que tome el certificado SSL renovado
-#   por certbot.
+#   03:30  Respaldo diario de la base de datos.
+#   03:40  Anclaje diario de integridad de las constancias.
+#   03:50  Recarga de nginx, para que tome el certificado SSL renovado.
+#
+# Instalar con:
+#   cp deploy/cron/mardelsur /etc/cron.d/mardelsur && chmod 644 /etc/cron.d/mardelsur
 #
 # Formato cron.d: min hora dia mes dia-semana USUARIO comando
 
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
-# Respaldo diario de la BD de cotizaciones a las 03:30
+# Respaldo de la BD. Corre en el host y abre la base en modo SOLO LECTURA: si
+# escribiera como root dejaría archivos -wal y -shm de root sobre una base de
+# uid 1000, y el contenedor perdería la escritura en silencio.
 30 3 * * * root /usr/bin/python3 /opt/TransportesMarDelSur/scripts/backup_quotes.py >> /opt/TransportesMarDelSur/docker-data/backups/backup.log 2>&1
 
-# Recarga diaria de nginx a las 03:50 (toma el certificado SSL renovado)
+# Anclaje diario. A diferencia del respaldo, este ESCRIBE en la base, así que
+# corre DENTRO del contenedor como appuser (uid 1000), por el mismo motivo.
+# Va después del respaldo: si detecta la cadena rota, ya existe la copia del día.
+40 3 * * * root docker exec -u appuser mardelsur_web python -m constancias.anclaje >> /opt/TransportesMarDelSur/docker-data/backups/anclaje.log 2>&1
+
+# Recarga de nginx (toma el certificado SSL renovado por certbot).
 50 3 * * * root docker exec mardelsur_nginx nginx -s reload >> /opt/TransportesMarDelSur/docker-data/backups/backup.log 2>&1
 
