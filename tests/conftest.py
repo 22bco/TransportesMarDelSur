@@ -69,7 +69,9 @@ def semilla(app):
                 (1, 'Contenedor 1 m3', 100),
                 (2, 'Contenedor 5 m3', 500);
 
-            INSERT INTO usuario (id, email, nombre, rol, created_at) VALUES
+            -- OR IGNORE: algunos tests crean su propio usuario antes de pedir
+            -- la semilla y ese ocuparía el id 1.
+            INSERT OR IGNORE INTO usuario (id, email, nombre, rol, created_at) VALUES
                 (1, 'sistema@transportesmardelsur.cl', 'Sistema', 'admin',
                  '2026-01-01T00:00:00Z');
 
